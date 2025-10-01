@@ -1,0 +1,137 @@
+{% extends "store/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- ==================== ردیف اصلی محصول ==================== -->
+    <div class="row">
+
+        <!-- ستون سمت راست: گالری تصاویر -->
+        <div class="col-lg-5">
+            <div class="product-gallery">
+                <div class="main-image mb-3">
+                    {% if product.image %}
+                        <img class="img-fluid rounded" src="{{ product.image.url }}" alt="{{ product.name }}">
+                    {% else %}
+                        <img class="img-fluid rounded" src="https://via.placeholder.com/600x600.png?text=No+Image" alt="No image">
+                    {% endif %}
+                </div>
+                <!-- گالری تصاویر کوچک‌تر (در آینده می‌توانید این بخش را داینامیک کنید) -->
+                <div class="thumbnail-images d-flex justify-content-start">
+                    <!-- نمونه تصویر کوچک -->
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" class="img-thumbnail me-2" style="width: 80px; height: 80px; cursor: pointer;">
+                    {% endif %}
+                    <!-- می‌توانید تصاویر بیشتری را اینجا اضافه کنید -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ستون میانی: عنوان و ویژگی‌ها -->
+        <div class="col-lg-4">
+            <div class="product-details">
+                <!-- عنوان محصول -->
+                <h1 class="h2 mb-3">{{ product.name }}</h1>
+                
+                <!-- دسته‌بندی و برند -->
+                <div class="mb-3">
+                    <span class="text-muted">برند:</span> <a href="#">{{ product.category.name }}</a> | 
+                    <span class="text-muted">دسته‌بندی:</span> <a href="#">{{ product.category.name }}</a>
+                </div>
+                
+                <hr>
+
+                <!-- ویژگی‌های کلیدی محصول (مشخصات کوتاه) -->
+                {% if product.attributes.all %}
+                <ul class="list-unstyled product-features">
+                    {% for attr in product.attributes.all|slice:":5" %} <!-- نمایش حداکثر ۵ ویژگی -->
+                    <li>
+                        <strong>{{ attr.attribute.name }}:</strong> {{ attr.value }}
+                    </li>
+                    {% endfor %}
+                    {% if product.attributes.all.count > 5 %}
+                    <li><a href="#specifications-tab">+ موارد بیشتر</a></li>
+                    {% endif %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ستون سمت چپ: باکس خرید -->
+        <div class="col-lg-3">
+            <div class="card p-3 shadow-sm">
+                <div class="card-body">
+                    <div class="price-section mb-3">
+                        <!-- اینجا می‌توانید منطق تخفیف را اضافه کنید -->
+                        <span class="h4 font-weight-bold">{{ product.price|floatformat:0 }} تومان</span>
+                    </div>
+
+                    <div class="availability mb-3">
+                        <p><i class="bi bi-check-circle-fill text-success"></i> موجود در انبار</p>
+                        <p><i class="bi bi-truck text-info"></i> ارسال از امروز</p>
+                    </div>
+
+                    <form action="{% url 'cart:cart_add' product.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-lg w-100">افزودن به سبد خرید</button>
+                    </form>
+                    <div class="text-center mt-2">
+                        <a href="{% url 'cart:cart_detail' %}" class="small">مشاهده محصول در سبد خرید <i class="bi bi-chevron-left"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ==================== ردیف توضیحات و مشخصات ==================== -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <!-- تب‌ها -->
+            <ul class="nav nav-tabs" id="productTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab">توضیحات</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="specifications-tab-btn" data-bs-toggle="tab" data-bs-target="#specifications" type="button" role="tab">مشخصات</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">نظرات</button>
+                </li>
+            </ul>
+
+            <!-- محتوای تب‌ها -->
+            <div class="tab-content pt-4" id="productTabContent">
+                <!-- تب توضیحات -->
+                <div class="tab-pane fade show active" id="description" role="tabpanel">
+                    {{ product.description|linebreaks }}
+                </div>
+
+                <!-- تب مشخصات فنی (ویژگی‌ها) -->
+                <div class="tab-pane fade" id="specifications" role="tabpanel">
+                    {% if product.attributes.all %}
+                        <table class="table table-striped">
+                            <tbody>
+                                {% for attr in product.attributes.all %}
+                                <tr>
+                                    <td style="width: 30%;"><strong>{{ attr.attribute.name }}</strong></td>
+                                    <td>{{ attr.value }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>ویژگی برای این محصول ثبت نشده است.</p>
+                    {% endif %}
+                </div>
+
+                <!-- تب نظرات -->
+                <div class="tab-pane fade" id="reviews" role="tabpanel">
+                    <p>در حال حاضر نظری برای این محصول ثبت نشده است.</p>
+                    <!-- در آینده می‌توانید فرم ثبت نظر را اینجا قرار دهید -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

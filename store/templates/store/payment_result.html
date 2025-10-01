@@ -1,0 +1,20 @@
+{% extends "store/base.html" %}
+
+{% block content %}
+<div class="container text-center">
+    {% if success %}
+        <div class="alert alert-success" role="alert">
+            <h2>پرداخت موفقیت آمیز بود!</h2>
+            <p>سفارش شما با شماره پیگیری {{ order.id }} با موفقیت ثبت شد.</p>
+            <p>از خرید شما متشکریم.</p>
+        </div>
+    {% else %}
+        <div class="alert alert-danger" role="alert">
+            <h2>پرداخت ناموفق!</h2>
+            <p>{{ error }}</p>
+            <p>در صورت کسر وجه از حساب شما، مبلغ تا ۷۲ ساعت آینده به حسابتان بازگردانده خواهد شد.</p>
+        </div>
+    {% endif %}
+    <a href="{% url 'store:product_list' %}" class="btn btn-primary mt-3">بازگشت به صفحه اصلی</a>
+</div>
+{% endblock %}

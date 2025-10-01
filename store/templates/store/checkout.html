@@ -1,0 +1,43 @@
+<!-- در فایل store/templates/store/checkout.html -->
+
+{% extends "store/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- ستون سمت راست: فرم آدرس -->
+        <div class="col-lg-6">
+            <div class="box-element" id="form-wrapper">
+                <form id="form" method="POST">
+                    {% csrf_token %}
+                    <div id="shipping-info">
+                        <hr>
+                        <p>اطلاعات ارسال:</p>
+                        {{ form.as_p }}
+                    </div>
+                    <hr>
+                    <input id="form-button" class="btn btn-success btn-block" type="submit" value="ادامه و پرداخت">
+                </form>
+            </div>
+        </div>
+
+        <!-- ستون سمت چپ: خلاصه سفارش -->
+        <div class="col-lg-6">
+            <div class="box-element">
+                <a class="btn btn-outline-dark" href="{% url 'cart:cart_detail' %}">&#x2190; بازگشت به سبد خرید</a>
+                <hr>
+                <h3>خلاصه سفارش</h3>
+                <hr>
+                {% for item in cart %}
+                <div class="d-flex justify-content-between">
+                    <p>{{ item.product.name }} (x{{ item.quantity }})</p>
+                    <p>{{ item.total_price|floatformat:0 }} تومان</p>
+                </div>
+                {% endfor %}
+                <hr>
+                <h5><strong>جمع کل: {{ cart.get_total_price|floatformat:0 }} تومان</strong></h5>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

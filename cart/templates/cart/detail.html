@@ -1,0 +1,57 @@
+<!-- در فایل cart/templates/cart/detail.html -->
+
+{% extends "store/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>سبد خرید شما</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>تصویر</th>
+                <th>محصول</th>
+                <th>تعداد</th>
+                <th>حذف</th>
+                <th>قیمت واحد</th>
+                <th>قیمت کل</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cart %}
+                {% with product=item.product %}
+                <tr>
+                    <td>
+                        <a href="{{ product.get_absolute_url }}">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" style="width: 100px;">
+                            {% else %}
+                                <img src="{% static 'images/no_image.png' %}" style="width: 100px;">
+                            {% endif %}
+                        </a>
+                    </td>
+                    <td>{{ product.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>
+                        <form action="{% url 'cart:cart_remove' product.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm">حذف</button>
+                        </form>
+                    </td>
+                    <td class="num"> تومان {{ item.price|floatformat:0 }}</td>
+                    <td class="num"> تومان {{ item.total_price|floatformat:0 }}</td>
+                </tr>
+                {% endwith %}
+            {% endfor %}
+            <tr class="total">
+                <td colspan="5">جمع کل</td>
+                <td class="num"> تومان {{ cart.get_total_price|floatformat:0 }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <p class="text-right">
+        <a href="{% url 'store:product_list' %}" class="btn btn-secondary">ادامه خرید</a>
+        <a href="{% url 'store:checkout' %}" class="btn btn-primary">پرداخت</a>
+    </p>
+</div>
+{% endblock %}
