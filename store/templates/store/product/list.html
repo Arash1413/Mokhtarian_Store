@@ -1,46 +1,90 @@
-<!-- در فایل store/templates/store/product/list.html (نسخه نهایی و صحیح) -->
-
 {% extends "store/base.html" %}
+{% load static %}
 
 {% block content %}
-<div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
-    
-    {% for product in products %}
-    <div class="col mb-5">
-        <div class="card h-100">
-            <!-- Product image-->
-            {% if product.image %}
-                <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}" />
-            {% else %}
-                <img class="card-img-top" src="https://via.placeholder.com/450x300.png?text=No+Image" alt="No image" />
-            {% endif %}
-            
-            <!-- Product details-->
-            <div class="card-body p-4">
-                <div class="text-center">
-                    <!-- Product name-->
-                    <h5 class="fw-bolder">
-                        <a href="{{ product.get_absolute_url }}">{{ product.name }}</a>
-                    </h5>
-                    <!-- Product price-->
-                    {{ product.price }} تومان
-                </div>
-            </div>
 
-            <!-- Product actions-->
-            <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
-                <div class="text-center">
-                    <form action="{% url 'cart:cart_add' product.id %}" method="post">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-outline-dark mt-auto">افزودن به سبد</button>
-                    </form>
-                </div>
+<!-- بنر تزئینی (آدرس تصویر را حتما عوض کنید) -->
+<div class="container my-5">
+    <div class="p-5 text-center bg-body-tertiary rounded-3" style="background: url('{% static 'images/banner.jpg' %}') no-repeat center center; background-size: cover; min-height: 300px;">
+        <div class="d-flex justify-content-center align-items-center h-100" style="background-color: rgba(0, 0, 0, 0.5); border-radius: .5rem;">
+            <div>
+                <h1 class="text-white">جدیدترین محصولات</h1>
+                <p class="col-lg-8 mx-auto fs-5 text-white">
+                    کیفیت و زیبایی را با ما تجربه کنید.
+                </p>
             </div>
-            <!-- div مربوط به card در اینجا بسته می‌شود -->
         </div>
-        <!-- div مربوط به col در اینجا بسته می‌شود -->
     </div>
-    {% endfor %}
+</div>
 
+<div class="container px-4 py-5" id="custom-cards">
+
+    <!-- بخش پرفروش‌ترین‌ها -->
+    {% if bestsellers %}
+    <h2 class="pb-2 border-bottom">پرفروش‌ترین‌ها</h2>
+    <div class="row row-cols-1 row-cols-lg-4 align-items-stretch g-4 py-5 special-section">
+        {% for product in bestsellers %}
+            <div class="col">
+                {% include 'store/product/product_card.html' with product=product %}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- بخش تخفیف‌خورده‌ها -->
+    {% if discounted %}
+    <h2 class="pb-2 border-bottom">تخفیفات شگفت‌انگیز</h2>
+    <div class="row row-cols-1 row-cols-lg-4 align-items-stretch g-4 py-5 special-section">
+        {% for product in discounted %}
+            <div class="col">
+                {% include 'store/product/product_card.html' with product=product %}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- بخش همه محصولات با صفحه‌بندی -->
+    {% if category %}
+        <h2 class="pb-2 border-bottom">محصولات دسته‌بندی: {{ category.name }}</h2>
+    {% else %}
+        <h2 class="pb-2 border-bottom">همه محصولات</h2>
+    {% endif %}
+    
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 py-5">
+        {% for product in products %}
+            <div class="col">
+                {% include 'store/product/product_card.html' with product=product %}
+            </div>
+        {% empty %}
+            <p>محصولی برای نمایش وجود ندارد.</p>
+        {% endfor %}
+    </div>
+    
+    <!-- کنترل‌های صفحه‌بندی -->
+    {% if products.has_other_pages %}
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        {% if products.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ products.previous_page_number }}">قبلی</a></li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">قبلی</span></li>
+        {% endif %}
+        
+        {% for i in products.paginator.page_range %}
+          {% if products.number == i %}
+            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+          {% else %}
+            <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+          {% endif %}
+        {% endfor %}
+
+        {% if products.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ products.next_page_number }}">بعدی</a></li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">بعدی</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
 </div>
 {% endblock %}

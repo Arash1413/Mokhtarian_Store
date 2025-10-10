@@ -1,0 +1,26 @@
+<!-- در فایل store/templates/store/product/product_card.html -->
+<div class="card h-100 shadow-sm card-product">
+    {% if product.old_price %}
+        <div class="badge bg-danger text-white position-absolute" style="top: 0.5rem; right: 0.5rem">تخفیف</div>
+    {% endif %}
+    <a href="{{ product.get_absolute_url }}">
+        <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}" />
+    </a>
+    <div class="card-body p-4">
+        <div class="text-center">
+            <h5 class="fw-bolder">{{ product.name }}</h5>
+            {% if product.old_price %}
+                <span class="text-muted text-decoration-line-through">{{ product.old_price|floatformat:0 }} تومان</span><br>
+            {% endif %}
+            {{ product.price|floatformat:0 }} تومان
+        </div>
+    </div>
+    <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+        <div class="text-center">
+            <form action="{% url 'cart:cart_add' product.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-dark mt-auto">افزودن به سبد</button>
+            </form>
+        </div>
+    </div>
+</div>

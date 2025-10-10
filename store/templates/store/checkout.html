@@ -1,41 +1,92 @@
-<!-- در فایل store/templates/store/checkout.html -->
-
 {% extends "store/base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container-lg my-5">
     <div class="row">
-        <!-- ستون سمت راست: فرم آدرس -->
-        <div class="col-lg-6">
-            <div class="box-element" id="form-wrapper">
-                <form id="form" method="POST">
-                    {% csrf_token %}
-                    <div id="shipping-info">
-                        <hr>
-                        <p>اطلاعات ارسال:</p>
-                        {{ form.as_p }}
-                    </div>
-                    <hr>
-                    <input id="form-button" class="btn btn-success btn-block" type="submit" value="ادامه و پرداخت">
-                </form>
+        <div class="col-12 text-center mb-4">
+            <h1 class="display-5 fw-bold">تکمیل اطلاعات و پرداخت</h1>
+            <p class="text-muted">لطفاً آدرس دقیق خود را برای ارسال سفارش وارد نمایید.</p>
+        </div>
+    </div>
+    
+    <div class="row g-5">
+        <!-- ستون سمت راست: فرم اطلاعات ارسال -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-4">اطلاعات ارسال</h4>
+                    <form id="form" method="POST">
+    {% csrf_token %}
+    <div class="row g-3">
+        <!-- فیلد نام و نام خانوادگی -->
+        <div class="col-md-6">
+            <label for="{{ form.full_name.id_for_label }}" class="form-label">نام و نام خانوادگی</label>
+            {{ form.full_name }}
+        </div>
+        <!-- فیلد شماره تماس -->
+        <div class="col-md-6">
+            <label for="{{ form.phone_number.id_for_label }}" class="form-label">شماره تماس</label>
+            {{ form.phone_number }}
+        </div>
+
+        <!-- فیلد آدرس کامل -->
+        <div class="col-12">
+            <label for="{{ form.address.id_for_label }}" class="form-label">آدرس کامل</label>
+            {{ form.address }}
+        </div>
+        <!-- فیلد استان -->
+        <div class="col-md-6">
+            <label for="{{ form.state.id_for_label }}" class="form-label">استان</label>
+            {{ form.state }}
+        </div>
+        <!-- فیلد شهر -->
+        <div class="col-md-6">
+            <label for="{{ form.city.id_for_label }}" class="form-label">شهر</label>
+            {{ form.city }}
+        </div>
+        <!-- فیلد کد پستی -->
+        <div class="col-md-6">
+            <label for="{{ form.zipcode.id_for_label }}" class="form-label">کد پستی</label>
+            {{ form.zipcode }}
+        </div>
+    </div>
+    <hr class="my-4">
+    <div class="d-grid">
+        <button class="btn btn-warning btn-lg fw-bold" type="submit">ادامه و پرداخت</button>
+    </div>
+</form>
+                </div>
             </div>
         </div>
 
         <!-- ستون سمت چپ: خلاصه سفارش -->
-        <div class="col-lg-6">
-            <div class="box-element">
-                <a class="btn btn-outline-dark" href="{% url 'cart:cart_detail' %}">&#x2190; بازگشت به سبد خرید</a>
-                <hr>
-                <h3>خلاصه سفارش</h3>
-                <hr>
-                {% for item in cart %}
-                <div class="d-flex justify-content-between">
-                    <p>{{ item.product.name }} (x{{ item.quantity }})</p>
-                    <p>{{ item.total_price|floatformat:0 }} تومان</p>
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 100px;">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-4">خلاصه سفارش</h4>
+                    <a class="btn btn-sm btn-outline-secondary mb-3" href="{% url 'cart:cart_detail' %}">
+                        <i class="bi bi-arrow-right"></i> بازگشت به سبد خرید
+                    </a>
+                    
+                    {% for item in cart %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ item.product.image.url }}" class="img-fluid rounded" style="width: 60px;" alt="{{ item.product.name }}">
+                            <div class="me-3">
+                                <p class="mb-0 fw-bold">{{ item.product.name }}</p>
+                                <small class="text-muted">تعداد: {{ item.quantity }}</small>
+                            </div>
+                        </div>
+                        <span class="fw-bold">{{ item.total_price|floatformat:0 }} تومان</span>
+                    </div>
+                    {% endfor %}
+
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold fs-5 mt-3">
+                        <span>مبلغ قابل پرداخت:</span>
+                        <span>{{ cart.get_total_price|floatformat:0 }} تومان</span>
+                    </div>
                 </div>
-                {% endfor %}
-                <hr>
-                <h5><strong>جمع کل: {{ cart.get_total_price|floatformat:0 }} تومان</strong></h5>
             </div>
         </div>
     </div>

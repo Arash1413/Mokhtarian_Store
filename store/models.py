@@ -29,6 +29,8 @@ class Product(models.Model):
     available = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+    old_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) # <-- فیلد جدید
+    is_bestseller = models.BooleanField(default=False) # <-- فیلد جدید
 
     class Meta:
         ordering = ('-created',)
@@ -93,6 +95,8 @@ class OrderItem(models.Model):
 class ShippingAddress(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
     order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True)
+    full_name = models.CharField(max_length=200, null=True)  # <-- فیلد جدید
+    phone_number = models.CharField(max_length=20, null=True) # <-- فیلد جدید
     address = models.CharField(max_length=200, null=False)
     city = models.CharField(max_length=200, null=False)
     state = models.CharField(max_length=200, null=False) # استان

@@ -1,0 +1,28 @@
+{% extends "store/base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="text-center">
+        {% if query %}
+            <h1 class="display-5 fw-bold">نتایج جستجو برای: "{{ query }}"</h1>
+            <p class="text-muted">{{ products.count }} محصول یافت شد.</p>
+        {% else %}
+            <h1 class="display-5 fw-bold">لطفاً عبارتی را برای جستجو وارد کنید.</h1>
+        {% endif %}
+    </div>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 py-5">
+        {% for product in products %}
+            <div class="col">
+                {% include 'store/product/product_card.html' with product=product %}
+            </div>
+        {% empty %}
+            {% if query %}
+                <div class="col-12 text-center">
+                    <p class="lead">متاسفانه محصولی با مشخصات وارد شده یافت نشد.</p>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

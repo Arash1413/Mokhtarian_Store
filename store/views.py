@@ -10,36 +10,59 @@ from .models import Order, OrderItem, ShippingAddress, Customer
 from django.urls import reverse
 from django.conf import settings
 import requests
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.contrib.auth.decorators import login_required
 
 
 # Create your views here.
 
-def product_list(request):
-    products = Product.objects.filter(available=True)
+def product_list(request, category_slug=None):
+    category = None
+    categories = Category.objects.all()
+    products_all = Product.objects.filter(available=True)
+
+    if category_slug:
+        category = get_object_or_404(Category, slug=category_slug)
+        products_all = products_all.filter(category=category)
+
+    # --- بخش جدید: آماده‌سازی لیست‌های مختلف ---
+    bestsellers = Product.objects.filter(available=True, is_bestseller=True)[:8] # ۸ محصول پرفروش
+    discounted = Product.objects.filter(available=True, old_price__isnull=False).exclude(old_price=0)[:8] # ۸ محصول تخفیف‌دار
+    newest = Product.objects.filter(available=True).order_by('-created')[:8] # ۸ محصول جدیدترین
+
+    # --- بخش جدید: پیاده‌سازی صفحه‌بندی برای همه محصولات ---
+    paginator = Paginator(products_all, 12) # نمایش ۱۲ محصول در هر صفحه
+    page_number = request.GET.get('page')
+    products_paginated = paginator.get_page(page_number)
     
-    # --- بخش اشکال زدایی ---
-    print("="*20)
-    print(f"تعداد محصولات پیدا شده: {products.count()}")
-    for p in products:
-        print(f"- محصول: {p.name}, قیمت: {p.price}")
-    print("="*20)
-    # --- پایان بخش اشکال زدایی ---
-
-    return render(request, 
-                  'store/product/list.html', 
-                  {'products': products})
-
-
-    # product = Product.objects.filter(available=True)
-
-    # return render(request, 'store/product/list.html', {'product': product})
-
+    context = {
+        'category': category,
+        'categories': categories,
+        'products': products_paginated, # <-- لیست صفحه‌بندی شده
+        'bestsellers': bestsellers,      # <-- لیست جدید
+        'discounted': discounted,        # <-- لیست جدید
+        'newest': newest,                # <-- لیست جدید
+    }
+    return render(request, 'store/product/list.html', context)
 
 
 def product_detail(request, slug):
     product = get_object_or_404(Product, slug=slug, available=True)
 
-    return render(request, 'store/product/detail.html', {'product': product})
+    related_products = Product.objects.filter(
+        category=product.category, 
+        available=True
+    ).exclude(slug=slug).order_by('?')[:4]
+
+    # داده‌ها را به قالب HTML ارسال کن
+    context = {
+        'product': product,
+        'related_products': related_products # <-- لیست جدید
+    }
+    return render(request, 
+                  'store/product/detail.html', 
+                  context)
 
 
 def register(request):
@@ -94,17 +117,19 @@ def checkout(request):
             # آماده‌سازی داده‌ها برای ارسال به آقای پرداخت
             pin_code = settings.MR_PARDDAKHT_API_KEY
             payment_data = {
-                'pin': pin_code,
+                # 'pin': pin_code,
+                "pin": "sandbox",
                 'amount': total_price_rial,
                 'callback': callback_url,
-                'order_id': str(order.id),
+                'invoice_id': str(order.id),
                 'description': f'سفارش شماره {order.id}',
         }
             
             # ارسال درخواست به آقای پرداخت
             # URL مربوط به درخواست پرداخت را از مستندات آقای پرداخت بردارید
             # این URL صرفا یک مثال است
-            request_url = 'https://aqayepardakht.ir/api/v2/create'
+            # request_url = 'https://aqayepardakht.ir/api/v2/create'
+            request_url = 'https://panel.aqayepardakht.ir/api/v2/create'
             
             try:
               response = requests.post(request_url, json=payment_data)
@@ -115,7 +140,8 @@ def checkout(request):
         # اگر درخواست موفق بود
         # آقای پرداخت authority را با نام 'transid' برمی‌گرداند
                 authority = response_json.get('transid')
-                payment_url = f"https://aqayepardakht.ir/startpay/{authority}"
+                # payment_url =  f"https://aqayepardakht.ir/sandbox/startpay/{authority}" 
+                payment_url = f"https://panel.aqayepardakht.ir/startpay/sandbox/{authority}"
 
                 # ذخیره کد رهگیری (authority/transid) در سفارش
                 order.transaction_id = authority
@@ -174,7 +200,8 @@ def payment_verify(request):
     }
 
     # آدرس API برای تأیید تراکنش (مطابق مستندات)
-    verify_url = 'https://aqayepardakht.ir/api/v2/verify'
+    # verify_url = 'https://aqayepardakht.ir/api/v2/verify'
+    verify_url = 'https://panel.aqayepardakht.ir/api/v2/verify'
     
     try:
         response = requests.post(verify_url, json=verify_data)
@@ -197,3 +224,39 @@ def payment_verify(request):
         print(f"Error verifying payment: {e}")
         error_message = 'خطا در ارتباط با درگاه برای تأیید تراکنش.'
         return render(request, 'store/payment_result.html', {'order': order, 'error': error_message})
+    
+def search(request):
+    query = request.GET.get('q', None)
+    products = Product.objects.filter(available=True)
+
+    if query:
+        # با استفاده از Q objects، در نام محصول یا توضیحات آن جستجو می‌کنیم
+        # __icontains برای جستجوی غیرحساس به حروف بزرگ و کوچک است
+        products = products.filter(
+            Q(name__icontains=query) | 
+            Q(description__icontains=query)
+        )
+        # می‌توانید فیلدهای بیشتری را به جستجو اضافه کنید، مثلا:
+        # Q(category__name__icontains=query)
+
+    context = {
+        'query': query,
+        'products': products
+    }
+    return render(request, 'store/product/search_results.html', context)
+
+def about_page(request):
+    # در آینده می‌توانید اطلاعاتی مثل اعضای تیم یا... را از دیتابیس بگیرید و به context اضافه کنید
+    context = {} 
+    return render(request, 'store/about.html', context)
+
+@login_required(login_url='login') # اگر کاربر وارد نشده بود، او را به صفحه ورود بفرست
+def profile(request):
+    customer = request.user.customer
+    # تمام سفارشات تکمیل شده این مشتری را از جدیدترین به قدیمی‌ترین مرتب کن
+    orders = Order.objects.filter(customer=customer, complete=True).order_by('-date_ordered')
+
+    context = {
+        'orders': orders
+    }
+    return render(request, 'store/profile.html', context)

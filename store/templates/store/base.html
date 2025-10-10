@@ -1,99 +1,230 @@
-<!-- در فایل store/templates/store/base.html -->
-
-{% load static %}  <!-- تگ لازم برای استفاده از فایل‌های استاتیک -->
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <title>فروشگاه لوازم خانگی ما</title>
+        <title>فروشگاه لوازم خانگی MELO</title>
         <!-- Favicon-->
         <link rel="icon" type="image/x-icon" href="{% static 'assets/favicon.ico' %}" />
         <!-- Bootstrap icons-->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
         <!-- Core theme CSS (includes Bootstrap)-->
         <link href="{% static 'css/styles.css' %}" rel="stylesheet" />
+        <style>
+            :root {
+            /* بازنویسی رنگ‌های اصلی بوت‌استرپ */
+            --bs-primary: #4a5759;      /* سبز-خاکستری تیره برای دکمه‌ها و لینک‌ها */
+            --bs-secondary: #b0c4b1;    /* سبز روشن برای پس‌زمینه‌های ثانویه */
+            --bs-dark: #2d3a3a;         /* یک درجه تیره‌تر از primary برای متن‌های تیره */
+            --bs-light: #f7f7f7;        /* خاکستری خیلی روشن برای پس‌زمینه */
+            
+            /* رنگ تاکیدی (Accent Color) */
+            --accent-color: #dda15e;     /* طلایی/خردلی برای جلب توجه */
+        }
+        
+        /* اعمال رنگ‌های جدید به بخش‌های مختلف */
+        body {
+            background-color: var(--bs-light); /* پس‌زمینه کلی سایت */
+        }
+
+        .navbar, .footer {
+            background-color: #ffffff !important; /* هدر و فوتر سفید برای حس تمیزی */
+        }
+        
+        /* دکمه افزودن به سبد خرید در کارت محصول */
+        .card .btn-outline-dark {
+            border-color: var(--bs-primary);
+            color: var(--bs-primary);
+        }
+        .card .btn-outline-dark:hover {
+            background-color: var(--bs-primary);
+            color: #fff;
+        }
+        
+        /* دکمه افزودن به سبد در صفحه جزئیات */
+        .btn-danger { /* کلاس پیش‌فرض را تغییر می‌دهیم */
+            background-color: var(--accent-color) !important;
+            border-color: var(--accent-color) !important;
+        }
+
+        /* برچسب تخفیف */
+        .badge.bg-danger {
+            background-color: var(--accent-color) !important;
+        }
+        
+        /* تیتر بخش‌ها */
+        .border-bottom {
+            border-color: var(--accent-color) !important;
+            border-width: 2px !important;
+        }
+        
+        /* لینک‌های فعال و هاور */
+        .nav-link:hover, .dropdown-item:hover {
+            color: var(--accent-color);
+        }
+        .pagination .page-item.active .page-link {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+        }
+        .pagination .page-link {
+            color: var(--bs-primary);
+        }
+        
+        /* لوگو */
+        .navbar-brand-centered {
+            color: var(--bs-dark) !important;
+            font-weight: 900; /* کمی ضخیم‌تر برای تاکید */
+        }
+        .navbar {
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
+        }
+
+        .navbar .nav-link,
+        .navbar .btn {
+            font-size: 1.1rem; /* افزایش اندازه فونت آیتم‌های منو و دکمه‌ها */
+        }
+
+        .navbar-brand-centered {
+            font-size: 2rem !important; /* بزرگتر کردن لوگو */
+        }
+        .navbar .nav-link {
+    color: #000 !important; /* رنگ مشکی برای لینک‌های منو */
+    font-weight: 600; /* کمی ضخیم‌تر کردن فونت */
+    font-size: 1.15rem; /* کمی بزرگتر کردن فونت */
+}
+
+.navbar .dropdown-menu .dropdown-item {
+    font-weight: 500; /* ضخامت نرمال برای آیتم‌های زیرمنو */
+    font-size: 1rem; /* سایز نرمال برای آیتم‌های زیرمنو */
+}
+
+/* بزرگتر کردن و استایل‌دهی به نوار جستجو */
+header form[role="search"] .form-control {
+    padding: 0.6rem 1rem; /* افزایش ارتفاع نوار جستجو */
+    font-size: 1.1rem; /* بزرگتر کردن فونت داخل نوار جستجو */
+}
+header form[role="search"] {
+    width: 300px; /* یا هر عرض دیگری که مناسب می‌دانید، مثلا 250px */
+}
+.card-product {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card-product:hover {
+    transform: translateY(-5px); /* کارت را ۵ پیکسل به بالا حرکت می‌دهد */
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; /* یک سایه برجسته اضافه می‌کند */
+}
+
+        </style>
     </head>
     <body>
-        <!-- Navigation-->
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <div class="container px-4 px-lg-5">
-                <a class="navbar-brand" href="{% url 'store:product_list' %}">فروشگاه ما</a>
-                <div class="collapse navbar-collapse">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
-                        <li class="nav-item"><a class="nav-link active" href="{% url 'store:product_list' %}">خانه</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#!">درباره ما</a></li>
-                    </ul>
-
+        <!-- ======================= هدر جدید شبیه به وگاس ======================= -->
+        <header class="py-3 border-bottom bg-white sticky-top">
+            <div class="container-fluid px-4 px-lg-5">
+                <nav class="navbar navbar-expand-lg navbar-light">
+                    <!-- بخش راست: منوی کاربر و سبد خرید -->
                     <div class="d-flex align-items-center">
-    
-                        <!-- منوی کاربری (ورود/خروج) -->
                         <div class="dropdown">
                             <a class="btn btn-outline-dark dropdown-toggle mx-2" href="#" role="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person-fill"></i>
+                                <i class="bi bi-person"></i> حساب کاربری
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                            <ul class="dropdown-menu" aria-labelledby="userMenu">
                                 {% if user.is_authenticated %}
                                     <li><span class="dropdown-item-text">سلام، {{ user.username }}</span></li>
-                                    <li><a class="dropdown-item" href="#">پروفایل من</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'store:profile' %}">پروفایل من</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                        
-                                        <li>
-                                            <form class="d-inline" action="{% url 'logout' %}" method="post">
-                                                {% csrf_token %}
-                                                <button type="submit" class="dropdown-item">خروج</button>
-                                            </form>
-                                        </li>
-
-  
+                                    <li>
+                                        <form action="{% url 'logout' %}" method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item">خروج</button>
+                                        </form>
+                                    </li>
                                 {% else %}
                                     <li><a class="dropdown-item" href="{% url 'login' %}">ورود</a></li>
                                     <li><a class="dropdown-item" href="{% url 'register' %}">ثبت‌نام</a></li>
                                 {% endif %}
                             </ul>
                         </div>
-
-                        <!-- دکمه سبد خرید -->
                         <a class="btn btn-outline-dark" href="{% url 'cart:cart_detail' %}">
                             <i class="bi-cart-fill me-1"></i>
-                            سبد خرید
                             <span class="badge bg-dark text-white ms-1 rounded-pill">{{ cart|length }}</span>
                         </a>
-
                     </div>
-                    <!-- ================= END: بخش ویرایش شده ================= -->
 
-                </div>
-            </div>
-        </nav>
-        <!-- Header-->
-        <header class="bg-light">
-            <div class="container px-4 px-lg-5 my-5">
-                <div class="text-center text-dark">
-                    <h1 class="display-4 fw-bold">به فروشگاه ما خوش آمدید</h1>
-                    <p class="lead fw-normal text-dark-50 mb-0">بهترین لوازم خانگی و آشپزخانه</p>
-                </div>
+                    <!-- بخش وسط: لوگو -->
+                    <a class="navbar-brand navbar-brand-centered fs-3" href="/">MELO</a>
+                    
+                    <!-- دکمه همبرگری برای موبایل -->
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    
+                    <!-- بخش چپ: منوی اصلی و جستجو -->
+                    <div class="collapse navbar-collapse" id="main-nav">
+                        <ul class="navbar-nav ms-auto">
+                            <li class="nav-item"><a href="{% url 'store:product_list' %}" class="nav-link">خانه</a></li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="categoriesDropdown" role="button" data-bs-toggle="dropdown">دسته‌بندی محصولات</a>
+                                <ul class="dropdown-menu">
+                                    {% for c in categories %}
+                                        <li><a class="dropdown-item" href="{% url 'store:product_list_by_category' c.slug %}">{{ c.name }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                            <li class="nav-item"><a href="{% url 'store:about_page' %}" class="nav-link">درباره ما</a></li>
+                        </ul>
+                        <form class="input-group ms-lg-3" action="{% url 'store:search' %}" method="GET" role="search">
+    <input type="search" name="q" class="form-control" placeholder="جستجو..." aria-label="Search" value="{{ query|default:'' }}">
+    <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+</form>
+                    </div>
+                </nav>
             </div>
         </header>
 
-        <!-- Section-->
-        <section class="py-5">
-            <div class="container px-4 px-lg-5 mt-5">
-                
-                <!-- اینجا محتوای اصلی هر صفحه قرار می‌گیرد -->
-                {% block content %}
-                {% endblock %}
+        <!-- ======================= محتوای اصلی هر صفحه ======================= -->
+        <main>
+            {% block content %}{% endblock %}
+        </main>
 
+        <!-- ======================= فوتر تمام‌عرض ======================= -->
+        <footer class="footer mt-auto py-5">
+          <div class="container-fluid px-4 px-lg-5">
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <h5>فروشگاه MELO</h5>
+                <p class="text-muted">
+                    آدرس کامل فروشگاه: چهارمحال و بختیاری شهرکرد فردوسی جنوبی نرسیده به ترمینال آزادی <br>
+                    ساعات کاری: شنبه تا پنج‌شنبه 8 صبح تا 7 بعدازظهر
+                </p>
+              </div>
+
+              <div class="col-md-3 mb-3">
+                <h5>پشتیبانی</h5>
+                <ul class="nav flex-column">
+                  <li class="nav-item mb-2 text-muted">09162243093</li>
+                  
+                </ul>
+              </div>
+
+              <div class="col-md-5 mb-3">
+                <h5>با ما در ارتباط باشید</h5>
+                <div class="d-flex flex-nowrap gap-2">
+                    <a href="https://www.instagram.com/your_instagram_id" target="_blank" class="btn btn-dark btn-lg"><i class="bi bi-instagram"></i></a>
+                    <a href="https://wa.me/989052211303" target="_blank" class="btn btn-success btn-lg"><i class="bi bi-whatsapp"></i></a>
+                </div>
+              </div>
             </div>
-        </section>
-
-        <!-- Footer-->
-        <footer class="py-5 bg-light">
-            <div class="container"><p class="m-0 text-center text-muted">Copyright &copy; Your Website 2023</p></div>
+            <div class="d-flex justify-content-center py-4 my-4 border-top">
+              <p>© 2024 MELO. All rights reserved.</p>
+            </div>
+          </div>
         </footer>
-        <!-- Bootstrap core JS-->
+
+        <!-- JS Files -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- Core theme JS-->
         <script src="{% static 'js/scripts.js' %}"></script>
     </body>
 </html>

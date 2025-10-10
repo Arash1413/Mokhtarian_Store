@@ -1,20 +1,45 @@
-<!-- در فایل store/templates/registration/register.html -->
-
 {% extends "store/base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container my-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <h2>ثبت‌نام در سایت</h2>
-            <form method="post">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="btn btn-primary">ثبت‌نام</button>
-            </form>
-            <p class="mt-3">
-                قبلاً ثبت‌نام کرده‌اید؟ <a href="{% url 'login' %}">وارد شوید</a>
-            </p>
+        <div class="col-md-6 col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 p-md-5">
+                    <h2 class="text-center fw-bold mb-4">ایجاد حساب کاربری</h2>
+                    <form method="post">
+                        {% csrf_token %}
+
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label_tag }}</label>
+                                <input type="{{ field.field.widget.input_type }}" 
+                                       name="{{ field.name }}" 
+                                       id="{{ field.id_for_label }}" 
+                                       class="form-control form-control-lg text-start"
+                                       placeholder="{{ field.label }}...">
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text|safe }}</small>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <div class="alert alert-danger p-2 small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+
+                        {% for error in form.non_field_errors %}
+                            <div class="alert alert-danger p-2 small">{{ error }}</div>
+                        {% endfor %}
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">ثبت‌نام</button>
+                        </div>
+                    </form>
+                    <p class="mt-4 text-center">
+                        قبلاً ثبت‌نام کرده‌اید؟ <a href="{% url 'login' %}">وارد شوید</a>
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, Customer, Order, OrderItem, Attribute, ProductAttribute
+from .models import Category, Product, Customer, Order, OrderItem, Attribute, ProductAttribute, ShippingAddress
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -12,9 +12,9 @@ class ProductAttributeInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'slug', 'price', 'stock', 'available', 'created', 'updated']
-    list_filter = ['available', 'created', 'updated']
-    list_editable = ['price', 'stock', 'available']
+    list_display = ['name', 'slug', 'price', 'old_price', 'is_bestseller', 'stock', 'available']
+    list_filter = ['available', 'created', 'updated', 'is_bestseller']
+    list_editable = ['price', 'old_price', 'stock', 'available', 'is_bestseller']
     prepopulated_fields = {'slug': ('name',)}
     inlines = [ProductAttributeInline]
 
@@ -27,12 +27,17 @@ class OrderItemInline(admin.TabularInline):
     model = OrderItem
     raw_id_fields = ['product']
 
+class ShippingAddressInline(admin.StackedInline): # از StackedInline برای نمایش بهتر استفاده می‌کنیم
+    model = ShippingAddress
+    can_delete = False # معمولا نمی‌خواهیم آدرس را از اینجا حذف کنیم
+    verbose_name_plural = 'آدرس ارسال'
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ['id', 'customer', 'date_ordered', 'complete', 'get_cart_total', 'get_cart_items']
     list_filter = ['complete', 'date_ordered']
     search_fields = ['id', 'customer__name']
-    inlines = [OrderItemInline]
+    inlines = [ShippingAddressInline, OrderItemInline]
 
 @admin.register(Attribute)
 class AttributeAdmin(admin.ModelAdmin):

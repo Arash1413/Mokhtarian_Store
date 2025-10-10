@@ -137,4 +137,4 @@ CART_SESSION_ID = 'cart'
 LOGIN_REDIRECT_URL = '/'  # بعد از ورود موفق، به صفحه اصلی برو
 LOGOUT_REDIRECT_URL = '/' # بعد از خروج موفق، به صفحه اصلی برو
 
-MR_PARDDAKHT_API_KEY = '56F1368A0E50F2FB160F'
+MR_PARDDAKHT_API_KEY = '54F1368A0E50F2FB160F'
