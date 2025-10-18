@@ -64,7 +64,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'cart.context_processors.cart',
+                # 'cart.context_processors.cart',
             ],
         },
     },
@@ -138,3 +138,5 @@ LOGIN_REDIRECT_URL = '/'  # بعد از ورود موفق، به صفحه اصل
 LOGOUT_REDIRECT_URL = '/' # بعد از خروج موفق، به صفحه اصلی برو
 
 MR_PARDDAKHT_API_KEY = '54F1368A0E50F2FB160F'
+
+

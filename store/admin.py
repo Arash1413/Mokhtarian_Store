@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, Customer, Order, OrderItem, Attribute, ProductAttribute, ShippingAddress
+from .models import Category, Product, Customer, Order, OrderItem, Attribute, ProductAttribute, ShippingAddress, Brand
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -10,13 +10,19 @@ class ProductAttributeInline(admin.TabularInline):
     model = ProductAttribute
     extra = 1 # ب
 
+@admin.register(Brand)
+class BrandAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ['name', 'slug', 'price', 'old_price', 'is_bestseller', 'stock', 'available']
-    list_filter = ['available', 'created', 'updated', 'is_bestseller']
+    list_filter = ['available', 'created', 'updated', 'is_bestseller', 'brand']
     list_editable = ['price', 'old_price', 'stock', 'available', 'is_bestseller']
     prepopulated_fields = {'slug': ('name',)}
     inlines = [ProductAttributeInline]
+    search_fields = ['name', 'description']
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
