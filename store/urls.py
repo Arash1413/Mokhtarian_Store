@@ -16,4 +16,5 @@ urlpatterns = [
     # آدرس برای نمایش جزئیات یک محصول
     # <slug:slug> یعنی یک متغیر به نام slug از نوع اسلاگ را از URL دریافت کن
     path('<slug:slug>/', views.product_detail, name='product_detail'),
+   
 ]

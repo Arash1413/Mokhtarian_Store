@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-43miu0kj^5+kaub7p%ij015-hz*z*9+&^s7d!b1!)4gf4)6#ta
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -44,11 +44,13 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'cart.middleware.CartMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+   
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -64,7 +66,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'cart.context_processors.cart',
+                # 'cart.context_processors.cart',
             ],
         },
     },
@@ -138,5 +140,6 @@ LOGIN_REDIRECT_URL = '/'  # بعد از ورود موفق، به صفحه اصل
 LOGOUT_REDIRECT_URL = '/' # بعد از خروج موفق، به صفحه اصلی برو
 
 MR_PARDDAKHT_API_KEY = '54F1368A0E50F2FB160F'
+
 
 
