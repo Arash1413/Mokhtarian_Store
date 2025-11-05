@@ -82,6 +82,13 @@ def checkout(request):
             
             # 1. ایجاد سفارش موقت با قیمت نهایی
             order = Order.objects.create(customer=customer, complete=False, total_price=total_price_toman)
+
+            for item in cart:
+                OrderItem.objects.create(
+                order=order,
+                product=item['product'],
+                quantity=item['quantity']
+        )
             
             # 2. ایجاد آدرس و اتصال به سفارش موقت
             shipping_address = form.save(commit=False)
@@ -107,7 +114,7 @@ def checkout(request):
             headers = {'Content-Type': 'application/json'}
             
             try:
-                response = requests.post(request_url, json=payment_data, headers=headers)
+                response = requests.post(request_url, json=payment_data, headers=headers, timeout=10)
                 response.raise_for_status() # برای خطاهای 4xx/5xx
                 response_json = response.json()
 
@@ -168,7 +175,7 @@ def payment_verify(request):
     headers = {'Content-Type': 'application/json'}
     
     try:
-        response = requests.post(verify_url, json=verify_data, headers=headers)
+        response = requests.post(verify_url, json=verify_data, headers=headers, timeout=10)
         response.raise_for_status()
         response_json = response.json()
 
@@ -176,11 +183,7 @@ def payment_verify(request):
             # نهایی کردن سفارش
             order.complete = True
             order.save()
-
-            # اضافه کردن آیتم‌های سبد خرید به سفارش نهایی شده
-            cart = request.cart
-            for item in cart:
-                OrderItem.objects.create(order=order, product=item['product'], quantity=item['quantity'])
+            
 
             # پاک کردن سبد خرید از session
             cart.clear()
@@ -226,5 +229,22 @@ def profile(request):
         'orders': orders
     }
     return render(request, 'store/profile.html', context)
+
+
+@login_required(login_url='login')
+def order_detail(request, order_id):
+    customer = request.user.customer
+    # بررسی امنیتی: پیدا کردن سفارش که هم ID درست را داشته باشد و هم متعلق به کاربر فعلی باشد
+    order = get_object_or_404(Order, id=order_id, customer=customer, complete=True)
+    
+    order_items = order.orderitem_set.all()
+    shipping_address = order.shippingaddress_set.first()
+
+    context = {
+        'order': order,
+        'order_items': order_items,
+        'shipping_address': shipping_address,
+    }
+    return render(request, 'store/order_detail.html', context)
 
 

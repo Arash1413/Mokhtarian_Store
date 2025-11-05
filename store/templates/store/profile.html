@@ -35,7 +35,7 @@
                                     <td>{{ order.get_cart_total|floatformat:0 }} تومان</td>
                                     <td><span class="badge bg-success">تکمیل شده</span></td>
                                     <td>
-                                        <a href="#" class="btn btn-sm btn-outline-secondary">مشاهده جزئیات</a>
+                                        <a href="{% url 'store:order_detail' order.id %}" class="btn btn-sm btn-outline-secondary">مشاهده جزئیات</a>
                                     </td>
                                 </tr>
                                 {% empty %}

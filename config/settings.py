@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,10 +21,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-43miu0kj^5+kaub7p%ij015-hz*z*9+&^s7d!b1!)4gf4)6#ta'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
@@ -39,6 +40,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'store',
     'cart',
+
+    'axes',
+    'simple_history',
 ]
 
 MIDDLEWARE = [
@@ -50,6 +54,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'axes.middleware.AxesMiddleware',
    
 ]
 
@@ -66,7 +72,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                # 'cart.context_processors.cart',
+                'cart.context_processors.cart',
             ],
         },
     },
@@ -139,7 +145,48 @@ CART_SESSION_ID = 'cart'
 LOGIN_REDIRECT_URL = '/'  # بعد از ورود موفق، به صفحه اصلی برو
 LOGOUT_REDIRECT_URL = '/' # بعد از خروج موفق، به صفحه اصلی برو
 
-MR_PARDDAKHT_API_KEY = '54F1368A0E50F2FB160F'
+MR_PARDDAKHT_API_KEY = config('MR_PARDDAKHT_API_KEY')
 
 
+if not DEBUG:
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+    # ریدایرکت تمام درخواست‌های HTTP به HTTPS
+    SECURE_SSL_REDIRECT = True
+    
+    # استفاده از کوکی‌های امن که فقط روی HTTPS ارسال می‌شوند
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    
+    # جلوگیری از دسترسی جاوا اسکریپت به کوکی session (جلوگیری از XSS)
+    # این گزینه در جنگو مدرن به طور پیش‌فرض True است، اما ذکر آن ضرری ندارد
+    SESSION_COOKIE_HTTPONLY = True
+
+    # فعال‌سازی HSTS (HTTP Strict Transport Security)
+    # این به مرورگر می‌گوید که برای 1 سال آینده فقط از HTTPS استفاده کند
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # تنظیمات اضافی امنیتی (اختیاری اما توصیه شده)
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+
+AXES_FAILURE_LIMIT = 3  # بعد از ۳ بار تلاش ناموفق قفل شود
+AXES_COOLOFF_TIME = 1  # برای ۱ ساعت قفل بماند (مقدار به ساعت است)
+AXES_LOCKOUT_CALLABLE = "axes.utils.get_user_and_ip" # قفل بر اساس ترکیب IP و نام کاربری
+
+AUTHENTICATION_BACKENDS = [
+    # AxesBackend should be the first backend in the AUTHENTICATION_BACKENDS list.
+    'axes.backends.AxesBackend',
+
+    # Django ModelBackend is the default authentication backend.
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+import sys
+if 'test' in sys.argv:
+    AXES_ENABLED = False
 
