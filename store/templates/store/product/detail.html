@@ -13,12 +13,17 @@
                     {% if product.image %}
                         <img class="img-fluid" src="{{ product.image.url }}" alt="{{ product.name }}">
                     {% else %}
-                        <img class="img-fluid" src="https://via.placeholder.com/800x800.png?text=No+Image" alt="No image">
+                        <img class="img-fluid" src="{% static 'images/placeholder.png' %}" alt="No image">
                     {% endif %}
                 </div>
                 <div class="thumbnail-images d-flex justify-content-start">
-                    {% if product.image %}
+                    <!-- {% if product.image %}
                     <img src="{{ product.image.url }}" class="img-thumbnail me-2" style="width: 100px; height: 100px; cursor: pointer;">
+                    {% endif %} -->
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="img-thumbnail me-2" style="width: 100px; height: 100px; cursor: pointer;">
+                    {% else %}
+                        <img src="{% static 'images/placeholder.png' %}" class="img-thumbnail me-2" style="width: 100px; height: 100px; cursor: pointer;" alt="No image">
                     {% endif %}
                 </div>
             </div>

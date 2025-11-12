@@ -143,9 +143,6 @@ def checkout(request):
     return render(request, 'store/checkout.html', context)
 
 
-
-
-
 def cart(request):
     # cart = Cart(request)
     cart = request.cart

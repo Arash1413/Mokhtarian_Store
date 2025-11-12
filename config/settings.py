@@ -73,6 +73,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'cart.context_processors.cart',
+                'store.context_processors.categories',
             ],
         },
     },
@@ -174,9 +175,9 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
 
-AXES_FAILURE_LIMIT = 3  # بعد از ۳ بار تلاش ناموفق قفل شود
-AXES_COOLOFF_TIME = 1  # برای ۱ ساعت قفل بماند (مقدار به ساعت است)
-AXES_LOCKOUT_CALLABLE = "axes.utils.get_user_and_ip" # قفل بر اساس ترکیب IP و نام کاربری
+# AXES_FAILURE_LIMIT = 3  # بعد از ۳ بار تلاش ناموفق قفل شود
+# AXES_COOLOFF_TIME = 1  # برای ۱ ساعت قفل بماند (مقدار به ساعت است)
+# AXES_LOCKOUT_CALLABLE = "axes.utils.get_user_and_ip"
 
 AUTHENTICATION_BACKENDS = [
     # AxesBackend should be the first backend in the AUTHENTICATION_BACKENDS list.
@@ -188,5 +189,12 @@ AUTHENTICATION_BACKENDS = [
 
 import sys
 if 'test' in sys.argv:
+    # Axes را در هنگام اجرای تست‌ها کاملاً غیرفعال کن
     AXES_ENABLED = False
-
+    
+    # برای جلوگیری از هشدار، این تنظیمات را هم در محیط تست حذف می‌کنیم
+    # با قرار دادن آنها در یک بلوک else
+else:
+    AXES_FAILURE_LIMIT = 3
+    AXES_COOLOFF_TIME = 1
+    AXES_LOCKOUT_CALLABLE = "axes.utils.get_user_and_ip"

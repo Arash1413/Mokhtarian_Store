@@ -1,4 +1,5 @@
 {% extends "store/base.html" %}
+{% load static %}
 
 {% block content %}
 <div class="container-lg my-5">
@@ -29,7 +30,12 @@
                     {% for item in order_items %}
                     <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
                         <div class="d-flex align-items-center">
-                            <img src="{{ item.product.image.url }}" class="img-fluid rounded" style="width: 80px;" alt="{{ item.product.name }}">
+                            <!-- <img src="{{ item.product.image.url }}" class="img-fluid rounded" style="width: 80px;" alt="{{ item.product.name }}"> -->
+                             {% if item.product.image %}
+                                <img src="{{ item.product.image.url }}" class="img-fluid rounded" style="width: 80px;" alt="{{ item.product.name }}">
+                            {% else %}
+                                <img src="{% static 'images/placeholder.png' %}" class="img-fluid rounded" style="width: 80px;" alt="{{ item.product.name }}">
+                            {% endif %}
                             <div class="me-3">
                                 <p class="mb-1 fw-bold">{{ item.product.name }}</p>
                                 <small class="text-muted">تعداد: {{ item.quantity }}</small>

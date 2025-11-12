@@ -52,7 +52,7 @@ class SecurityTests(TestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, f"جزئیات سفارش شماره {self.order_for_user1.id}") # بررسی محتوای صفحه
+        self.assertContains(response, f"جزئیات سفارش شماره #{self.order_for_user1.id}")
 
     def test_other_user_cannot_access_order_detail(self):
         """
@@ -108,7 +108,6 @@ class SecurityTests(TestCase):
         """
         تست موفق: کاربر وارد شده با سبد خرید پر باید بتواند صفحه تسویه حساب را ببیند (Status Code 200).
         """
-        # شبیه‌سازی اضافه کردن آیتم به سبد خرید در session
         session = self.client.session
         session[settings.CART_SESSION_ID] = {
             str(self.product.id): {'quantity': 1, 'price': str(self.product.price)}
@@ -118,7 +117,11 @@ class SecurityTests(TestCase):
         self.client.login(username='user1', password='password123')
         url = reverse('store:checkout')
         response = self.client.get(url)
-        
+
+        # ========== خط تشخیصی را اینجا اضافه کنید ==========
+        # print(response.content.decode('utf-8'))
+        # ===============================================
+
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "اطلاعات ارسال")
 

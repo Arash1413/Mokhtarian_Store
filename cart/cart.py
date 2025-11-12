@@ -42,29 +42,47 @@ class Cart:
             del self.cart[product_id]
             self.save()
 
+    # def __iter__(self):
+    #     """
+    #     Iterate over the items in the cart and get the products
+    #     from the database.
+    #     This method prepares items for display, without modifying the session cart.
+    #     """
+    #     product_ids = self.cart.keys()
+    #     products = Product.objects.filter(id__in=product_ids)
+
+    #     # یک دیکشنری برای دسترسی سریع به محصولات بر اساس ID
+    #     products_map = {str(p.id): p for p in products}
+
+    #     # روی یک کپی از سبد خرید حلقه بزنید
+    #     for product_id, item_data in self.cart.items():
+    #         product = products_map.get(product_id)
+    #         if product:
+    #             # یک دیکشنری جدید برای هر آیتم بسازید تا session اصلی تغییر نکند
+    #             item = item_data.copy()
+    #             item['product'] = product
+    #             price = Decimal(item['price'])
+    #             item['total_price'] = price * item['quantity']
+                
+    #             # این yield دیکشنری جدید و تمیز را برمی‌گرداند
+    #             yield item
     def __iter__(self):
-        """
-        Iterate over the items in the cart and get the products
-        from the database.
-        This method prepares items for display, without modifying the session cart.
-        """
         product_ids = self.cart.keys()
         products = Product.objects.filter(id__in=product_ids)
-
-        # یک دیکشنری برای دسترسی سریع به محصولات بر اساس ID
         products_map = {str(p.id): p for p in products}
 
-        # روی یک کپی از سبد خرید حلقه بزنید
         for product_id, item_data in self.cart.items():
             product = products_map.get(product_id)
             if product:
-                # یک دیکشنری جدید برای هر آیتم بسازید تا session اصلی تغییر نکند
                 item = item_data.copy()
                 item['product'] = product
                 price = Decimal(item['price'])
                 item['total_price'] = price * item['quantity']
                 
-                # این yield دیکشنری جدید و تمیز را برمی‌گرداند
+                # ========== خط تشخیصی ==========
+                # print(f"DEBUG: Yielding item for product: {product.name}")
+                # ===============================
+
                 yield item
 
     def __len__(self):

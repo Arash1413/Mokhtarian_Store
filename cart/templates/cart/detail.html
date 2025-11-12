@@ -20,7 +20,12 @@
                             <!-- تصویر محصول -->
                             <div class="col-md-2">
                                 <a href="{{ product.get_absolute_url }}">
-                                    <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}">
+                                    <!-- <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}"> -->
+                                     {% if product.image %}
+                                        <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}">
+                                    {% else %}
+                                        <img src="{% static 'images/placeholder.png' %}" class="img-fluid rounded" alt="{{ product.name }}">
+                                    {% endif %}
                                 </a>
                             </div>
                             <!-- نام محصول -->
