@@ -87,11 +87,15 @@
                     </div>
                     
                     {% if cart|length > 0 %}
-                    <div class="d-grid gap-2 mt-4">
-                        <a href="{% url 'store:checkout' %}" class="btn btn-warning btn-lg fw-bold">ادامه فرآیند خرید</a>
-                        <a href="{% url 'store:product_list' %}" class="btn btn-outline-secondary">ادامه خرید</a>
-                    </div>
+                        <div class="d-grid gap-2 mt-4">
+                            <a href="{% url 'store:checkout' %}" class="btn btn-warning btn-lg fw-bold">ادامه فرآیند خرید</a>
+                             
+                            
+
+                            <a href="{% url 'store:product_list' %}" class="btn btn-outline-secondary">ادامه خرید</a>
+                        </div>
                     {% endif %}
+
                 </div>
             </div>
         </div>

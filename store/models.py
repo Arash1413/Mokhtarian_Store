@@ -4,6 +4,7 @@ from django.urls import reverse
 from simple_history.models import HistoricalRecords
 
 
+
 # Create your models here.
 
 class Category(models.Model):
@@ -53,14 +54,31 @@ class Product(models.Model):
         return self.name
     
 
+# class Customer(models.Model):
+#     user = models.OneToOneField(User, on_delete=models.CASCADE)
+#     name = models.CharField(max_length=200, null=True)
+#     email = models.CharField(max_length=200, null=True)
+#     phone_number = models.CharField(max_length=15, blank=True, null=True)
+
+#     def __str__(self):
+#         return self.user.get_full_name() or self.user.username
+
 class Customer(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    # --- تغییرات کلیدی ---
+    # 1. OneToOneField را به ForeignKey تغییر دهید.
+    # 2. null=True و blank=True را اضافه کنید.
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    # --- پایان تغییرات ---
+
     name = models.CharField(max_length=200, null=True)
     email = models.CharField(max_length=200, null=True)
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True, unique=True) # اضافه کردن unique=True
 
     def __str__(self):
-        return self.user.get_full_name() or self.user.username
+        # اصلاح تابع __str__ برای مدیریت کاربرانی که user ندارند
+        if self.user:
+            return self.user.get_full_name() or self.user.username
+        return self.phone_number or f"Customer {self.id}"
     
 
 class Order(models.Model):

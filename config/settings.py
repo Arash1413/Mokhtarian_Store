@@ -198,3 +198,13 @@ else:
     AXES_FAILURE_LIMIT = 3
     AXES_COOLOFF_TIME = 1
     AXES_LOCKOUT_CALLABLE = "axes.utils.get_user_and_ip"
+
+SMS_IR_TEMPLATE_ID = 886831
+SMS_IR_API_KEY = config('X-API-KEY')
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "my-unique-cache-name",
+    }
+}
