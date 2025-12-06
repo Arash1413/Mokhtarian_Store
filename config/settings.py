@@ -208,3 +208,32 @@ CACHES = {
         "LOCATION": "my-unique-cache-name",
     }
 }
+
+# در settings.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'payment.log',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'store': {  # اگر اپلیکیشن store نام دارد
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        # لاگر ریشه هم اگر خواستی
+        '': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+    },
+}
+import logging

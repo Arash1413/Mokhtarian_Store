@@ -455,6 +455,7 @@
 # حححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححح
 
 
+from asyncio.log import logger
 from django.shortcuts import render, get_object_or_404, redirect, reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -470,6 +471,7 @@ from django.contrib import messages
 from .models import Category, Product, Order, OrderItem, ShippingAddress, Customer
 from .forms import CustomUserCreationForm, ShippingForm
 from cart.cart import Cart
+from .utils_payment import debug_prepare_payment_data, debug_handle_response
 
 # ==============================================================================
 # VIEWS مربوط به نمایش محصولات و صفحات عمومی (بدون تغییر)
@@ -643,31 +645,46 @@ def checkout(request):
             shipping_address.order = order
             shipping_address.save()
 
-            total_price_rial = int(float(total_price_toman) * 10)
+            total_price_rial = int(total_price_toman)
             callback_url = request.build_absolute_uri(reverse('store:payment_verify'))
             payment_data = {
                 'pin': settings.MR_PARDDAKHT_API_KEY, 'amount': total_price_rial, 'callback': callback_url,
                 'order_id': str(order.id), 'description': f'پرداخت سفارش شماره {order.id}',
                 'mobile': phone_verified,
             }
+
+            debug_prepare_payment_data(payment_data)
+
             request_url = 'https://panel.aqayepardakht.ir/api/v2/create'
+            headers = {'Content-Type': 'application/json'}
+
             try:
-                response = requests.post(request_url, json=payment_data, headers={'Content-Type': 'application/json'}, timeout=10)
+                response = requests.post(request_url, json=payment_data, headers=headers, timeout=10)
                 response.raise_for_status()
                 response_json = response.json()
+
+                debug_handle_response(response_json)
+
+                logger.info(f"Create payment response: {response_json}")
+
                 if response_json.get('status') == 'success':
-                    order.transaction_id = response_json.get('transid')
+                    transid = response_json.get('transid')
+                    order.transaction_id = transid
                     order.save()
-                    return redirect(f"https://panel.aqayepardakht.ir/startpay/{order.transaction_id}")
+                    return redirect(f"https://panel.aqayepardakht.ir/startpay/{transid}")
                 else:
                     order.delete()
                     error_message = response_json.get('message', 'خطا در ایجاد تراکنش.')
+                    logger.error(f"Payment creation failed: {response_json}")
                     return render(request, 'store/checkout.html', {'form': form, 'cart': cart, 'error': error_message})
             except requests.exceptions.RequestException as e:
                 order.delete()
+                logger.exception("Error connecting to payment gateway")
                 print(f"Error connecting to payment gateway: {e}")
                 error_message = 'خطا در اتصال به درگاه پرداخت.'
                 return render(request, 'store/checkout.html', {'form': form, 'cart': cart, 'error': error_message})
+        else:
+            logger.warning(f"invalid shipping form: {form.errors}")
     else:
         form = ShippingForm()
     context = {'form': form, 'cart': cart}
@@ -678,21 +695,30 @@ def checkout(request):
 def payment_verify(request):
     transid = request.POST.get('transid') or request.GET.get('transid')
     if not transid:
+        logger.error("verify called without transid")
         return render(request, 'store/payment_result.html', {'error': 'تراکنش نامعتبر است.'})
 
     try:
         order = Order.objects.get(transaction_id=transid, complete=False)
     except Order.DoesNotExist:
         if Order.objects.filter(transaction_id=transid, complete=True).exists():
-            return render(request, 'store/payment_result.html', {'order': Order.objects.get(transaction_id=transid), 'success': True, 'already_verified': True})
+            order_done = Order.objects.get(transaction_id=transid)
+            return render(request, 'store/payment_result.html', {'order': order_done, 'success': True, 'already_verified': True})
+        logger.error(f"Order with transid {transid} not found") 
         return render(request, 'store/payment_result.html', {'error': 'سفارش یافت نشد.'})
 
     verify_data = {'pin': settings.MR_PARDDAKHT_API_KEY, 'amount': int(float(order.total_price) * 10), 'transid': transid}
+
+    debug_prepare_payment_data(verify_data)
+
     verify_url = 'https://panel.aqayepardakht.ir/api/v2/verify'
+    headers = {'Content-Type': 'application/json'}
     try:
-        response = requests.post(verify_url, json=verify_data, headers={'Content-Type': 'application/json'}, timeout=10)
+        response = requests.post(verify_url, json=verify_data, headers=headers, timeout=10)
         response.raise_for_status()
         response_json = response.json()
+
+        logger.info(f"Payment verify response: {response_json}")
         if response_json.get('status') == 'success':
             order.complete = True
             order.save()
@@ -701,10 +727,12 @@ def payment_verify(request):
             request.session.pop('next_url', None)
             return render(request, 'store/payment_result.html', {'order': order, 'success': True})
         else:
-            order.delete()
             error_message = response_json.get('message', 'تراکنش توسط درگاه تأیید نشد.')
+            logger.error(f"Payment verification failed: {response_json}")
+            order.delete()
             return render(request, 'store/payment_result.html', {'error': error_message})
     except requests.exceptions.RequestException as e:
+        logger.exception("Error verifying payment with gateway")
         print(f"Error verifying payment: {e}")
         error_message = 'خطا در ارتباط با درگاه. لطفاً با پشتیبانی تماس بگیرید.'
         return render(request, 'store/payment_result.html', {'error': error_message})

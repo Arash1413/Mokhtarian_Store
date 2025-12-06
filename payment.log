@@ -1,0 +1,7 @@
+[PaymentDebug] Pin is correct.
+[PaymentDebug] Callback URL does not look secure: http://127.0.0.1:8000/payment/verify/
+[PaymentDebug] Prepared payment data: order_id=25, amount=2000
+[PaymentDebug] Amount 850000000 outside allowed range (1,000-200,000,000)
+[PaymentDebug] Pin is correct.
+[PaymentDebug] Callback URL does not look secure: http://127.0.0.1:8000/payment/verify/
+[PaymentDebug] Prepared payment data: order_id=26, amount=850000000
