@@ -58,6 +58,15 @@ class CustomUserCreationForm(UserCreationForm):
         return phone
 
 class ShippingForm(forms.ModelForm):
+    SHIPPING_CHOICES = [
+        ('mahex', 'ماهکس (پس‌کرایه - هزینه درب منزل)'),
+        ('post', 'پست پیشتاز (پیش پرداخت)'),
+    ]
+    shipping_method = forms.ChoiceField(
+        choices=SHIPPING_CHOICES, 
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        label="شیوه ارسال"
+    )
     class Meta:
         model = ShippingAddress
         # فیلدهای جدید را به لیست اضافه کنید

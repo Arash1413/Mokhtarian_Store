@@ -40,6 +40,7 @@ class Product(models.Model):
     updated = models.DateTimeField(auto_now=True)
     old_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) # <-- فیلد جدید
     is_bestseller = models.BooleanField(default=False) # <-- فیلد جدید
+    weight = models.PositiveIntegerField(default=0, help_text="وزن محصول به گرم")
 
     class Meta:
         ordering = ('-created',)
@@ -82,6 +83,13 @@ class Customer(models.Model):
     
 
 class Order(models.Model):
+    SHIPPING_CHOICES = [
+        ('mahex', 'ماهکس (پس‌کرایه)'),
+        ('post', 'پست پیشتاز'),
+    ]
+    # ... فیلدهای قبلی ...
+    shipping_method = models.CharField(max_length=20, choices=SHIPPING_CHOICES, default='mahex')
+    shipping_cost = models.DecimalField(max_digits=10, decimal_places=0, default=0)
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, blank=True, null=True)
     date_ordered = models.DateTimeField(auto_now_add=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)

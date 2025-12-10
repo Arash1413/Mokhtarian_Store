@@ -473,6 +473,9 @@ from .forms import CustomUserCreationForm, ShippingForm
 from cart.cart import Cart
 from .utils_payment import debug_prepare_payment_data, debug_handle_response
 from django.contrib.auth import login
+from .utils_shipping import calculate_shipping_cost
+import logging
+logger = logging.getLogger(__name__)
 # ==============================================================================
 # VIEWS مربوط به نمایش محصولات و صفحات عمومی (بدون تغییر)
 # ==============================================================================
@@ -616,24 +619,23 @@ def send_otp(request):
 @csrf_exempt
 def verify_otp(request):
     if request.method == "POST":
-        # دریافت کد از درخواست کاربر
-        # اگر فرانت‌اند شما phone را نمی‌فرستد، از سشن بگیرید
+        # 1. دریافت اطلاعات از درخواست یا سشن
         phone = request.POST.get("phone") or request.session.get('pending_phone')
         code = request.POST.get("code")
 
         if not phone or not code:
             return JsonResponse({"success": False, "message": "اطلاعات ناقص است."}, status=400)
 
-        # بررسی صحت کد OTP
+        # 2. بررسی صحت کد OTP
         saved_code = cache.get(f"otp_{phone}")
         
         if saved_code and str(saved_code) == str(code):
             # --- کد صحیح است: شروع فرآیند ثبت سفارش ---
             
-            # 1. پاک کردن کد از کش
+            # پاک کردن کد از کش برای جلوگیری از استفاده مجدد
             cache.delete(f"otp_{phone}")
             
-            # 2. دریافت اطلاعات سبد خرید و اطلاعات ارسال از سشن
+            # دریافت اطلاعات سبد خرید و آدرس از سشن
             cart = request.cart
             shipping_data = request.session.get('shipping_data')
             
@@ -652,20 +654,34 @@ def verify_otp(request):
                     defaults={'name': full_name}
                 )
                 
-                # اگر مشتری وجود داشت اما نام نداشت، نامش را آپدیت کن (اختیاری)
                 if not created and not customer.name:
                     customer.name = full_name
                     customer.save()
 
-                # 4. ایجاد سفارش
-                total_price_toman = cart.get_total_price()
+                # 4. --- محاسبه هزینه ارسال و مبلغ نهایی (بخش جدید) ---
+                shipping_method = shipping_data.get('shipping_method', 'mahex') # پیش‌فرض ماهکس
+                total_weight = cart.get_total_weight()
+                cart_total_price = cart.get_total_price()
+                
+                final_shipping_cost = 0 # هزینه ارسال پیش‌فرض (برای ماهکس یا پس‌کرایه 0 است)
+
+                if shipping_method == 'post':
+                    # محاسبه هزینه پست بر اساس وزن
+                    final_shipping_cost = calculate_shipping_cost(total_weight)
+                
+                # قیمت نهایی = قیمت کالاها + هزینه ارسال
+                final_total_price = float(cart_total_price) + float(final_shipping_cost)
+
+                # 5. ایجاد سفارش (با ذخیره جزئیات ارسال)
                 order = Order.objects.create(
                     customer=customer, 
                     complete=False, 
-                    total_price=total_price_toman
+                    total_price=final_total_price, # قیمت نهایی شامل پست
+                    shipping_method=shipping_method,
+                    shipping_cost=final_shipping_cost
                 )
 
-                # 5. ایجاد آیتم‌های سفارش
+                # 6. ایجاد آیتم‌های سفارش
                 for item in cart:
                     OrderItem.objects.create(
                         order=order,
@@ -673,20 +689,21 @@ def verify_otp(request):
                         quantity=item['quantity']
                     )
 
-                # 6. ذخیره آدرس در دیتابیس (با استفاده از داده‌های سشن)
+                # 7. ذخیره آدرس در دیتابیس
                 ShippingAddress.objects.create(
                     customer=customer,
                     order=order,
-                    full_name=shipping_data['full_name'],
-                    phone_number=shipping_data['phone_number'],
-                    address=shipping_data['address'],
-                    city=shipping_data['city'],
-                    state=shipping_data['state'],
-                    zipcode=shipping_data['zipcode']
+                    full_name=shipping_data.get('full_name'),
+                    phone_number=shipping_data.get('phone_number'),
+                    address=shipping_data.get('address'),
+                    city=shipping_data.get('city'),
+                    state=shipping_data.get('state'),
+                    zipcode=shipping_data.get('zipcode')
                 )
 
-                # 7. اتصال به درگاه پرداخت
-                total_price_rial = int(float(total_price_toman) * 10)
+                # 8. اتصال به درگاه پرداخت
+                # تبدیل تومان به ریال برای درگاه (ضرب در 10)
+                total_price_rial = int(final_total_price * 10)
                 callback_url = request.build_absolute_uri(reverse('store:payment_verify'))
                 
                 payment_data = {
@@ -694,11 +711,11 @@ def verify_otp(request):
                     'amount': total_price_rial,
                     'callback': callback_url,
                     'order_id': str(order.id),
-                    'description': f'پرداخت سفارش شماره {order.id}',
+                    'description': f'پرداخت سفارش شماره {order.id} | ارسال: {shipping_method}',
                     'mobile': phone,
                 }
 
-                # لاگ کردن برای دیباگ (اختیاری)
+                # لاگ کردن برای دیباگ
                 debug_prepare_payment_data(payment_data)
 
                 request_url = 'https://panel.aqayepardakht.ir/api/v2/create'
@@ -707,17 +724,18 @@ def verify_otp(request):
                 response = requests.post(request_url, json=payment_data, headers=headers, timeout=10)
                 response.raise_for_status()
                 response_json = response.json()
+                
+                # لاگ پاسخ درگاه
+                debug_handle_response(response_json)
 
                 if response_json.get('status') == 'success':
                     transid = response_json.get('transid')
                     order.transaction_id = transid
                     order.save()
                     
-                    # پاک کردن داده‌های موقت سشن
+                    # پاک کردن داده‌های موقت سشن (به جز phone_verified که شاید برای صفحه بعد لازم شود)
                     del request.session['shipping_data']
-                    # del request.session['pending_phone'] # شاید برای وریفای نهایی لازم شود، فعلا نگه دارید
-
-                    # بازگرداندن لینک پرداخت به جاوااسکریپت برای ریدایرکت
+                    
                     payment_url = f"https://panel.aqayepardakht.ir/startpay/{transid}"
                     return JsonResponse({
                         "success": True, 
@@ -726,15 +744,17 @@ def verify_otp(request):
                     })
                 else:
                     order.delete()
+                    logger.error(f"Payment creation failed: {response_json}")
                     return JsonResponse({
                         "success": False, 
-                        "message": f"خطا در درگاه پرداخت: {response_json.get('message')}"
+                        "message": f"خطا در درگاه پرداخت: {response_json.get('message', 'خطای ناشناخته')}"
                     })
 
             except Exception as e:
-                # اگر خطایی رخ داد (مثل قطعی اینترنت یا دیتابیس)
+                # اگر خطایی رخ داد، سفارش ناقص را پاک کن
                 if 'order' in locals() and order.id:
                     order.delete()
+                logger.exception("Error processing verify_otp order creation")
                 print(f"Error processing order: {e}")
                 return JsonResponse({
                     "success": False, 
@@ -755,28 +775,35 @@ def checkout(request):
     if len(cart) == 0:
         return redirect('store:product_list')
 
+    # محاسبه وزن و هزینه پست برای نمایش در صفحه
+    total_weight = cart.get_total_weight()
+    shipping_cost_post = calculate_shipping_cost(total_weight)
+
     if request.method == 'POST':
         form = ShippingForm(request.POST)
         if form.is_valid():
-            # 1. اطلاعات فرم را تمیز می‌کنیم اما در دیتابیس ذخیره نمی‌کنیم
             shipping_data = form.cleaned_data
-            
-            # 2. شماره موبایل را برای ارسال پیامک جدا می‌کنیم
             phone_number = shipping_data.get('phone_number')
             
-            # 3. ذخیره اطلاعات در Session برای استفاده در مرحله بعد
-            # نکته: داده‌ها باید قابل سریالایز شدن باشند (JSON)، پس آبجکت‌های مدل را ذخیره نمی‌کنیم
+            # دریافت روش ارسال انتخاب شده از فرم
+            selected_method = request.POST.get('shipping_method') # mahex یا post
+            
+            # ذخیره در سشن
             request.session['shipping_data'] = shipping_data
+            request.session['shipping_data']['shipping_method'] = selected_method # ذخیره روش ارسال
             request.session['pending_phone'] = phone_number
             
-            # 4. هدایت به صفحه OTP
             return redirect('store:otp_page')
     else:
-        # اگر کاربر قبلا اطلاعاتی وارد کرده بود، فرم را با آن پر کن
         saved_data = request.session.get('shipping_data')
         form = ShippingForm(initial=saved_data) if saved_data else ShippingForm()
 
-    context = {'form': form, 'cart': cart}
+    context = {
+        'form': form, 
+        'cart': cart,
+        'shipping_cost_post': shipping_cost_post, # ارسال هزینه پست به قالب
+        'total_weight': total_weight
+    }
     return render(request, 'store/checkout.html', context)
 
 

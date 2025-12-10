@@ -5,3 +5,6 @@
 [PaymentDebug] Pin is correct.
 [PaymentDebug] Callback URL does not look secure: http://127.0.0.1:8000/payment/verify/
 [PaymentDebug] Prepared payment data: order_id=26, amount=850000000
+[PaymentDebug] Pin is correct.
+[PaymentDebug] Callback URL does not look secure: http://127.0.0.1:8000/payment/verify/
+[PaymentDebug] Prepared payment data: order_id=27, amount=85000000

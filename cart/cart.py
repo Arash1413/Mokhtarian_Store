@@ -14,6 +14,21 @@ class Cart:
             cart = self.session[settings.CART_SESSION_ID] = {}
         self.cart = cart
 
+    def get_total_weight(self):
+        """
+        محاسبه وزن کل محصولات درون سبد خرید
+        """
+        product_ids = self.cart.keys()
+        products = Product.objects.filter(id__in=product_ids)
+        total_weight = 0
+        
+        for product in products:
+            cart_item = self.cart[str(product.id)]
+            qty = cart_item['quantity']
+            total_weight += (product.weight * qty)
+            
+        return total_weight
+
     def add(self, product, quantity=1, override_quantity=False):
         """
         Add a product to the cart or update its quantity.
