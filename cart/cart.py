@@ -11,6 +11,19 @@ class Cart:
         self.cart = cart
 
     def add(self, product, quantity=1, override_quantity=False):
+        # --- اصلاح امنیتی شروع ---
+        # اطمینان از اینکه تعداد حتما یک عدد صحیح است
+        try:
+            quantity = int(quantity)
+        except (ValueError, TypeError):
+            quantity = 1
+
+        # اگر تعداد کمتر از 1 بود، یا آن را نادیده بگیر یا به 1 تغییر بده
+        # در اینجا اگر کاربر عدد منفی فرستاد، ما هیچ کاری نمی‌کنیم (return) تا امنیت حفظ شود
+        if quantity < 1:
+            return 
+        # --- اصلاح امنیتی پایان ---
+
         product_id = str(product.id)
         if product_id not in self.cart:
             # قیمت اولیه را ذخیره می‌کنیم، اما محاسبات اصلی داینامیک انجام می‌شود
@@ -20,6 +33,7 @@ class Cart:
             self.cart[product_id]['quantity'] = quantity
         else:
             self.cart[product_id]['quantity'] += quantity
+            
         self.save()
 
     def save(self):

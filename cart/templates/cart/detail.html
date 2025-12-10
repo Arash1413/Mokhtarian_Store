@@ -17,7 +17,7 @@
                     {% for item in cart %}
                         {% with product=item.product %}
                         <div class="row align-items-center mb-4 pb-4 border-bottom">
-                            <!-- تصویر محصول -->
+                            <!-- تصویر -->
                             <div class="col-md-2 text-center">
                                 <a href="{{ product.get_absolute_url }}">
                                      {% if product.image %}
@@ -27,44 +27,48 @@
                                     {% endif %}
                                 </a>
                             </div>
-                            <!-- نام محصول -->
+                            <!-- نام -->
                             <div class="col-md-4">
                                 <a href="{{ product.get_absolute_url }}" class="text-dark text-decoration-none fw-bold fs-5">{{ product.name }}</a>
                                 <p class="text-muted small mt-1">دسته‌بندی: {{ product.category.name }}</p>
                             </div>
                             
-                            <!-- تعداد -->
+                            <!-- تعداد (اصلاح شده برای AJAX) -->
                             <div class="col-md-2">
                                 <label class="form-label small text-muted">تعداد</label>
-                                <!-- فرم آپدیت تعداد (برای تغییر قیمت عمده/خرده نیاز است که با تغییر تعداد صفحه رفرش شود یا دکمه آپدیت داشته باشد) -->
                                 <form action="{% url 'cart:cart_add' product.id %}" method="post" class="d-flex align-items-center">
                                     {% csrf_token %}
-                                    <!-- مقدار override_quantity=True باید در ویو هندل شود یا یک اینپوت مخفی باشد، اینجا ساده‌سازی شده -->
-                                    <input type="number" name="quantity" class="form-control form-control-sm text-center me-1" value="{{ item.quantity }}" min="1" style="max-width: 70px;">
-                                    <button type="submit" class="btn btn-sm btn-outline-primary p-1" title="بروزرسانی تعداد">
-                                        <i class="bi bi-arrow-clockwise"></i>
-                                    </button>
                                     <input type="hidden" name="override" value="True">
+                                    <!-- کلاس quantity-input و ویژگی data-product-id اضافه شد -->
+                                    <input type="number" 
+                                           name="quantity" 
+                                           class="form-control form-control-sm text-center quantity-input" 
+                                           value="{{ item.quantity }}" 
+                                           min="1" 
+                                           data-product-id="{{ product.id }}"
+                                           data-url="{% url 'cart:cart_add' product.id %}">
                                 </form>
                             </div>
 
-                            <!-- قیمت و وضعیت عمده/خرده -->
+                            <!-- قیمت -->
                             <div class="col-md-3 text-start">
-                                <!-- قیمت کل آیتم -->
-                                <span class="fw-bold fs-5 d-block">{{ item.total_price|floatformat:0 }} تومان</span>
+                                <!-- ID اضافه شد برای آپدیت قیمت کل آیتم -->
+                                <span class="fw-bold fs-5 d-block">
+                                    <span id="item-total-{{ product.id }}">{{ item.total_price|floatformat:0 }}</span> تومان
+                                </span>
                                 
-                                <!-- قیمت واحد -->
-                                <span class="text-muted small">{{ item.price|floatformat:0 }} تومان (واحد)</span>
+                                <!-- ID اضافه شد برای آپدیت قیمت واحد -->
+                                <span class="text-muted small">
+                                    <span id="item-price-{{ product.id }}">{{ item.price|floatformat:0 }}</span> تومان (واحد)
+                                </span>
 
-                                <!-- منطق نمایش وضعیت قیمت -->
-                                <div class="mt-2">
+                                <!-- بخش وضعیت عمده (ID اضافه شد) -->
+                                <div class="mt-2" id="wholesale-badge-{{ product.id }}">
                                     {% if item.is_wholesale_applied %}
-                                        <!-- حالت ۱: قیمت عمده اعمال شده است -->
                                         <span class="badge bg-success bg-opacity-10 text-success border border-success">
                                             <i class="bi bi-check-all"></i> قیمت عمده اعمال شد
                                         </span>
                                     {% elif product.wholesale_min_qty > 0 %}
-                                        <!-- حالت ۲: هنوز به تعداد عمده نرسیده -->
                                         <div class="alert alert-warning p-1 mb-0 mt-1 small" style="font-size: 0.75rem;">
                                             <i class="bi bi-exclamation-circle"></i>
                                             برای قیمت عمده ({{ product.wholesale_price|floatformat:0 }})، 
@@ -74,7 +78,7 @@
                                 </div>
                             </div>
 
-                            <!-- دکمه حذف -->
+                            <!-- حذف -->
                             <div class="col-md-1 text-end">
                                 <form action="{% url 'cart:cart_remove' product.id %}" method="post">
                                     {% csrf_token %}
@@ -89,8 +93,7 @@
                         <div class="text-center p-5">
                             <i class="bi bi-cart-x display-1 text-muted opacity-25"></i>
                             <h4 class="mt-4 fw-bold">سبد خرید شما خالی است.</h4>
-                            <p class="text-muted mb-4">برای شروع، محصولات مورد نظر خود را به سبد اضافه کنید.</p>
-                            <a href="{% url 'store:product_list' %}" class="btn btn-primary btn-lg fw-bold px-5">مشاهده محصولات</a>
+                            <a href="{% url 'store:product_list' %}" class="btn btn-primary btn-lg fw-bold px-5 mt-3">مشاهده محصولات</a>
                         </div>
                     {% endfor %}
                 </div>
@@ -106,23 +109,18 @@
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between mb-3">
                         <span class="text-muted">تعداد اقلام</span>
-                        <span class="fw-bold">{{ cart|length }} عدد</span>
+                        <!-- ID اضافه شد -->
+                        <span class="fw-bold"><span id="cart-count">{{ cart|length }}</span> عدد</span>
                     </div>
                     
-                    <div class="d-flex justify-content-between mb-3">
-                        <span class="text-muted">جمع کل</span>
-                        <span class="fw-bold">{{ cart.get_total_price|floatformat:0 }} تومان</span>
-                    </div>
-
-                    <div class="alert alert-light border small text-muted">
-                        <i class="bi bi-truck me-1"></i> هزینه ارسال در مرحله بعد محاسبه می‌شود.
-                    </div>
-
                     <hr>
                     
                     <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
                         <span class="fs-5 fw-bold text-dark">مبلغ قابل پرداخت</span>
-                        <span class="fs-4 fw-bold text-success">{{ cart.get_total_price|floatformat:0 }} <small class="fs-6">تومان</small></span>
+                        <!-- ID اضافه شد -->
+                        <span class="fs-4 fw-bold text-success">
+                            <span id="cart-total">{{ cart.get_total_price|floatformat:0 }}</span> <small class="fs-6">تومان</small>
+                        </span>
                     </div>
                     
                     {% if cart|length > 0 %}
@@ -139,4 +137,74 @@
         </div>
     </div>
 </div>
+
+<!-- اسکریپت AJAX برای تغییر خودکار قیمت -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const quantityInputs = document.querySelectorAll('.quantity-input');
+
+        quantityInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                const url = this.dataset.url;
+                const productId = this.dataset.productId;
+                const newQuantity = this.value;
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                // غیرفعال کردن ورودی هنگام پردازش
+                this.disabled = true;
+                this.style.opacity = '0.5';
+
+                const formData = new FormData();
+                formData.append('quantity', newQuantity);
+                formData.append('override', 'True'); // مهم: این فلگ برای جایگزینی تعداد است نه اضافه کردن
+
+                fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest' // علامت AJAX برای جنگو
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // آپدیت قیمت‌های همان آیتم
+                        document.getElementById(`item-total-${productId}`).innerText = data.item_total;
+                        document.getElementById(`item-price-${productId}`).innerText = data.item_price;
+                        
+                        // آپدیت خلاصه سفارش
+                        document.getElementById('cart-total').innerText = data.cart_total;
+                        document.getElementById('cart-count').innerText = data.cart_items_count;
+
+                        // آپدیت بج قیمت عمده
+                        const badgeContainer = document.getElementById(`wholesale-badge-${productId}`);
+                        if (data.is_wholesale) {
+                            badgeContainer.innerHTML = `
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                                    <i class="bi bi-check-all"></i> قیمت عمده اعمال شد
+                                </span>`;
+                        } else if (data.wholesale_min > 0) {
+                            badgeContainer.innerHTML = `
+                                <div class="alert alert-warning p-1 mb-0 mt-1 small" style="font-size: 0.75rem;">
+                                    <i class="bi bi-exclamation-circle"></i>
+                                    برای قیمت عمده (${data.wholesale_price})، 
+                                    حداقل <strong>${data.wholesale_min}</strong> عدد سفارش دهید.
+                                </div>`;
+                        } else {
+                            badgeContainer.innerHTML = '';
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error))
+                .finally(() => {
+                    // فعال کردن مجدد ورودی
+                    this.disabled = false;
+                    this.style.opacity = '1';
+                    this.focus();
+                });
+            });
+        });
+    });
+</script>
 {% endblock %}

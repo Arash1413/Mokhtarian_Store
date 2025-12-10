@@ -32,6 +32,7 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -197,7 +198,7 @@ if 'test' in sys.argv:
 else:
     AXES_FAILURE_LIMIT = 3
     AXES_COOLOFF_TIME = 1
-    AXES_LOCKOUT_CALLABLE = "axes.utils.get_user_and_ip"
+    # AXES_LOCKOUT_CALLABLE = "axes.utils.get_user_and_ip"
 
 SMS_IR_TEMPLATE_ID = 886831
 SMS_IR_API_KEY = config('X-API-KEY')
@@ -237,3 +238,69 @@ LOGGING = {
     },
 }
 import logging
+
+JAZZMIN_SETTINGS = {
+    # عنوان پنجره مرورگر
+    "site_title": "مدیریت فروشگاه ملو",
+    
+    # عنوان در صفحه لاگین
+    "site_header": "فروشگاه ملو",
+    
+    # لوگوی برند (فایل را در پوشه static/images قرار دهید)
+    "site_logo": "images/logo.png", # مسیر فرضی
+    
+    # متن خوش‌آمدگویی در صفحه لاگین
+    "welcome_sign": "به پنل مدیریت فروشگاه ملو خوش آمدید",
+    
+    # کپی‌رایت پایین صفحه
+    "copyright": "فروشگاه ملو",
+    
+    # مدل جستجوی سراسری (بالای صفحه)
+    "search_model": "store.Product",
+
+    # تنظیمات منوی سمت راست
+    "topmenu_links": [
+        {"name": "مشاهده سایت",  "url": "home", "permissions": ["auth.view_user"]},
+    ],
+    
+    # آیکون‌های منو (از سایت FontAwesome استفاده می‌کند)
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "store.Product": "fas fa-box-open",
+        "store.Order": "fas fa-shopping-cart",
+        "store.Category": "fas fa-list",
+        "store.Customer": "fas fa-user-tag",
+    },
+    # ترتیب نمایش اپ‌ها در منو
+    "order_with_respect_to": ["store", "auth"],
+}
+
+# تنظیمات UI (رنگ‌بندی و ...)
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-primary",
+    "accent": "accent-primary",
+    "navbar": "navbar-white navbar-light",
+    "no_navbar_border": False,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "theme": "default",   # تم‌های دیگر: cerulean, cosmo, cyborg, darkly, flatly, journal, litera, lumen, lux, materia, minty, pulse, sandstone, simplex, sketchy, slate, solar, spacelab, superhero, united, yeti
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    }
+}

@@ -175,10 +175,32 @@ header form[role="search"] {
                             </li>
                             <li class="nav-item"><a href="{% url 'store:about_page' %}" class="nav-link">درباره ما</a></li>
                         </ul>
-                        <form class="input-group ms-lg-3" action="{% url 'store:search' %}" method="GET" role="search">
-    <input type="search" name="q" class="form-control" placeholder="جستجو..." aria-label="Search" value="{{ query|default:'' }}">
-    <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+                        <form action="{% url 'store:search' %}" method="get" class="search-form d-flex align-items-center">
+    <div class="input-group search-box shadow-sm rounded-pill bg-white overflow-hidden border">
+        <button class="btn btn-link text-muted border-0 ps-3" type="submit">
+            <i class="bi bi-search fs-5"></i>
+        </button>
+        <input type="text" name="q" class="form-control border-0 shadow-none bg-transparent" placeholder="جستجو در محصولات..." aria-label="Search" style="height: 45px;">
+    </div>
 </form>
+
+
+<style>
+    .search-box {
+        transition: all 0.3s ease;
+        border: 1px solid #e0e0e0 !important;
+        min-width: 300px; /* عرض مناسب*/
+    }
+    .search-box:hover, .search-box:focus-within {
+        border-color: #ffc107 !important; /* رنگ زرد/نارنجی تم سایت شما*/
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+        transform: translateY(-1px);
+    }
+    .search-box input::placeholder {
+        font-size: 0.9rem;
+        color: #999;
+    }
+</style>
                     </div>
                 </nav>
             </div>
