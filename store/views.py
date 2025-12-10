@@ -1,458 +1,4 @@
 
-# from django.shortcuts import render, get_object_or_404, redirect
-# from django.contrib.auth import login
-# from django.contrib.auth.decorators import login_required
-# from django.urls import reverse
-# from django.conf import settings
-# from django.core.paginator import Paginator
-# from django.db.models import Q
-# import requests
-# import time
-# from django.views.decorators.csrf import csrf_exempt
-# import random
-# from django.core.cache import cache
-# from django.http import JsonResponse
-# from django.views.decorators.csrf import csrf_exempt
-# from .models import Category, Product, Order, OrderItem, ShippingAddress, Customer
-# from .forms import CustomUserCreationForm, ShippingForm
-# from cart.cart import Cart
-# from django.contrib import messages
-# from django.contrib.auth.models import User
-
-
-
-
-# def product_list(request, category_slug=None):
-#     category = None
-#     categories = Category.objects.all()
-#     products_all = Product.objects.filter(available=True)
-
-#     if category_slug:
-#         category = get_object_or_404(Category, slug=category_slug)
-#         products_all = products_all.filter(category=category)
-
-#     bestsellers = Product.objects.filter(available=True, is_bestseller=True)[:8]
-#     discounted = Product.objects.filter(available=True, old_price__isnull=False).exclude(old_price=0)[:8]
-#     newest = Product.objects.filter(available=True).order_by('-created')[:8]
-
-#     paginator = Paginator(products_all, 12)
-#     page_number = request.GET.get('page')
-#     products_paginated = paginator.get_page(page_number)
-    
-#     context = {
-#         'category': category,
-#         'categories': categories,
-#         'products': products_paginated,
-#         'bestsellers': bestsellers,
-#         'discounted': discounted,
-#         'newest': newest,
-#     }
-#     return render(request, 'store/product/list.html', context)
-
-
-# def product_detail(request, slug):
-#     product = get_object_or_404(Product, slug=slug, available=True)
-#     related_products = Product.objects.filter(
-#         category=product.category, 
-#         available=True
-#     ).exclude(slug=slug).order_by('?')[:4]
-#     context = {
-#         'product': product,
-#         'related_products': related_products
-#     }
-#     return render(request, 'store/product/detail.html', context)
-
-
-# def register(request):
-#     if request.method == 'POST':
-#         form = CustomUserCreationForm(request.POST)
-#         if form.is_valid():
-#             user = form.save()
-#             login(request, user)
-#             return redirect('/')
-#     else:
-#         form = CustomUserCreationForm()
-#     return render(request, 'registration/register.html', {'form': form})
-
-
-
-
-# # @login_required(login_url='login')
-# # def checkout(request):
-# #     cart = request.cart
-# #     if len(cart) == 0:
-# #         return redirect('store:product_list')
-
-# #     # --- مرحله 1: بررسی تأیید شماره موبایل ---
-# #     phone_verified = request.session.get('phone_verified')
-# #     if not phone_verified:
-# #         messages.info(request, 'برای ادامه خرید لطفاً شماره موبایل خود را تأیید کنید.')
-# #         return redirect('store:otp_verify')
-
-# #     # --- مرحله 2: پردازش فرم و ایجاد سفارش ---
-# #     if request.method == 'POST':
-# #         form = ShippingForm(request.POST)
-# #         if form.is_valid():
-# #             customer = request.user.customer
-# #             total_price_toman = cart.get_total_price()
-
-# #             # 1. ایجاد سفارش موقت
-# #             order = Order.objects.create(customer=customer, complete=False, total_price=total_price_toman)
-
-# #             for item in cart:
-# #                 OrderItem.objects.create(
-# #                     order=order,
-# #                     product=item['product'],
-# #                     quantity=item['quantity']
-# #                 )
-
-# #             # 2. ایجاد آدرس حمل و نقل
-# #             shipping_address = form.save(commit=False)
-# #             shipping_address.customer = customer
-# #             shipping_address.order = order
-# #             shipping_address.save()
-
-# #             # 3. ارسال اطلاعات به درگاه پرداخت
-# #             total_price_rial = int(float(total_price_toman) * 10)
-# #             callback_url = request.build_absolute_uri(reverse('store:payment_verify'))
-# #             pin_code = settings.MR_PARDDAKHT_API_KEY
-
-# #             payment_data = {
-# #                 'pin': pin_code,
-# #                 'amount': total_price_rial,
-# #                 'callback': callback_url,
-# #                 'order_id': str(order.id),
-# #                 'description': f'پرداخت سفارش شماره {order.id}',
-# #                 'mobile': phone_verified,  # استفاده از شماره موبایل تأیید شده
-# #             }
-
-# #             request_url = 'https://panel.aqayepardakht.ir/api/v2/create'
-# #             headers = {'Content-Type': 'application/json'}
-
-# #             try:
-# #                 response = requests.post(request_url, json=payment_data, headers=headers, timeout=10)
-# #                 response.raise_for_status()
-# #                 response_json = response.json()
-
-# #                 if response_json.get('status') == 'success':
-# #                     authority = response_json.get('transid')
-# #                     order.transaction_id = authority
-# #                     order.save()
-# #                     payment_url = f"https://panel.aqayepardakht.ir/startpay/{authority}"
-# #                     return redirect(payment_url)
-# #                 else:
-# #                     order.delete()
-# #                     error_message = response_json.get('message', 'خطا در ایجاد تراکنش.')
-# #                     context = {'form': form, 'cart': cart, 'error': error_message}
-# #                     return render(request, 'store/checkout.html', context)
-
-# #             except requests.exceptions.RequestException as e:
-# #                 order.delete()
-# #                 print(f"Error connecting to payment gateway: {e}")
-# #                 error_message = 'خطا در اتصال به درگاه پرداخت. لطفاً بعدا تلاش کنید.'
-# #                 context = {'form': form, 'cart': cart, 'error': error_message}
-# #                 return render(request, 'store/checkout.html', context)
-
-# #     else:
-# #         form = ShippingForm()
-
-# #     context = {'form': form, 'cart': cart}
-# #     return render(request, 'store/checkout.html', context)
-# def checkout(request):
-#     """
-#     مدیریت فرآیند تسویه حساب برای کاربران مهمان با اعتبارسنجی OTP.
-#     """
-#     cart = request.cart
-#     if len(cart) == 0:
-#         return redirect('store:product_list')
-
-#     # --- مرحله 1: بررسی اعتبارسنجی شماره موبایل از طریق Session ---
-#     phone_verified = request.session.get('phone_verified')
-    
-#     if not phone_verified:
-#         # اگر شماره موبایل کاربر هنوز تایید نشده است:
-#         # 1. یک پیام برای راهنمایی به او نمایش بده.
-#         messages.info(request, 'برای ادامه خرید لطفاً شماره موبایل خود را تأیید کنید.')
-#         # 2. آدرس صفحه فعلی (checkout) را در session ذخیره کن تا بعد از تایید، به اینجا برگردد.
-#         request.session['next_url'] = request.path
-#         # 3. او را به صفحه اعتبارسنجی OTP هدایت کن.
-#         return redirect('store:otp_page')
-
-#     # --- مرحله 2: پردازش فرم آدرس و ایجاد سفارش ---
-#     if request.method == 'POST':
-#         form = ShippingForm(request.POST)
-#         if form.is_valid():
-#             # چون کاربر لاگین نیست، مشتری (Customer) را بر اساس شماره موبایل تایید شده، پیدا یا ایجاد می‌کنیم.
-#             customer, created = Customer.objects.get_or_create(
-#                 phone_number=phone_verified,
-#                 # اگر مشتری جدید است، یک نام پیش‌فرض برای او در نظر بگیر
-#                 defaults={'name': f"کاربر مهمان {phone_verified}"}
-#             )
-
-#             total_price_toman = cart.get_total_price()
-
-#             # 1. ایجاد سفارش موقت با اتصال به مشتری پیدا شده/ایجاد شده
-#             order = Order.objects.create(customer=customer, complete=False, total_price=total_price_toman)
-            
-#             # ایجاد آیتم‌های سفارش از روی سبد خرید
-#             for item in cart:
-#                 OrderItem.objects.create(
-#                     order=order,
-#                     product=item['product'],
-#                     quantity=item['quantity']
-#                 )
-
-#             # 2. ایجاد آدرس حمل و نقل و اتصال آن به سفارش و مشتری
-#             shipping_address = form.save(commit=False)
-#             shipping_address.customer = customer
-#             shipping_address.order = order
-#             shipping_address.save()
-
-#             # 3. آماده‌سازی و ارسال اطلاعات به درگاه پرداخت
-#             total_price_rial = int(float(total_price_toman) * 10)
-#             callback_url = request.build_absolute_uri(reverse('store:payment_verify'))
-#             pin_code = settings.MR_PARDDAKHT_API_KEY
-
-#             payment_data = {
-#                 'pin': pin_code,
-#                 'amount': total_price_rial,
-#                 'callback': callback_url,
-#                 'order_id': str(order.id),
-#                 'description': f'پرداخت سفارش شماره {order.id}',
-#                 'mobile': phone_verified,  # استفاده از شماره موبایل تأیید شده در session
-#             }
-
-#             request_url = 'https://panel.aqayepardakht.ir/api/v2/create'
-#             headers = {'Content-Type': 'application/json'}
-
-#             try:
-#                 response = requests.post(request_url, json=payment_data, headers=headers, timeout=10)
-#                 response.raise_for_status()
-#                 response_json = response.json()
-
-#                 if response_json.get('status') == 'success':
-#                     order.transaction_id = response_json.get('transid')
-#                     order.save()
-#                     payment_url = f"https://panel.aqayepardakht.ir/startpay/{order.transaction_id}"
-#                     return redirect(payment_url)
-#                 else:
-#                     order.delete() # در صورت خطا از طرف درگاه، سفارش موقت را حذف کن
-#                     error_message = response_json.get('message', 'خطا در ایجاد تراکنش در درگاه پرداخت.')
-#                     context = {'form': form, 'cart': cart, 'error': error_message}
-#                     return render(request, 'store/checkout.html', context)
-
-#             except requests.exceptions.RequestException as e:
-#                 order.delete() # در صورت خطای شبکه، سفارش موقت را حذف کن
-#                 print(f"Error connecting to payment gateway: {e}")
-#                 error_message = 'خطا در اتصال به درگاه پرداخت. لطفاً بعداً تلاش کنید.'
-#                 context = {'form': form, 'cart': cart, 'error': error_message}
-#                 return render(request, 'store/checkout.html', context)
-    
-#     else: # اگر متد GET بود
-#         # یک فرم خالی برای وارد کردن آدرس نمایش بده
-#         form = ShippingForm()
-
-#     context = {'form': form, 'cart': cart}
-#     return render(request, 'store/checkout.html', context)
-
-
-
-# def cart(request):
-#     # cart = Cart(request)
-#     cart = request.cart
-#     return render(request, 'cart/detail.html', {'cart': cart})
-
-
-# @csrf_exempt
-# def payment_verify(request):
-#     transid = request.POST.get('transid') or request.GET.get('transid')
-#     if not transid:
-#         return render(request, 'store/payment_result.html', {'error': 'تراکنش نامعتبر است.'})
-
-#     try:
-#         order = Order.objects.get(transaction_id=transid, complete=False)
-#     except Order.DoesNotExist:
-#         # شاید تراکنش قبلا تایید شده، دوباره چک می‌کنیم
-#         if Order.objects.filter(transaction_id=transid, complete=True).exists():
-#             final_order = Order.objects.get(transaction_id=transid)
-#             return render(request, 'store/payment_result.html', {'order': final_order, 'success': True, 'already_verified': True})
-#         return render(request, 'store/payment_result.html', {'error': 'سفارش یافت نشد.'})
-
-#     pin_code = settings.MR_PARDDAKHT_API_KEY
-#     amount_rial = int(float(order.total_price) * 10)
-    
-#     verify_data = {'pin': pin_code, 'amount': amount_rial, 'transid': transid}
-#     verify_url = 'https://panel.aqayepardakht.ir/api/v2/verify'
-#     headers = {'Content-Type': 'application/json'}
-    
-#     try:
-#         response = requests.post(verify_url, json=verify_data, headers=headers, timeout=10)
-#         response.raise_for_status()
-#         response_json = response.json()
-
-#         if response_json.get('status') == 'success':
-#             # نهایی کردن سفارش
-#             order.complete = True
-#             order.save()
-            
-
-#             # پاک کردن سبد خرید از session
-#             cart.clear()
-            
-#             return render(request, 'store/payment_result.html', {'order': order, 'success': True})
-#         else:
-#             order.delete()
-#             error_message = response_json.get('message', 'تراکنش توسط درگاه تأیید نشد.')
-#             return render(request, 'store/payment_result.html', {'error': error_message})
-            
-#     except requests.exceptions.RequestException as e:
-#         # در این حالت سفارش موقت را پاک نمی‌کنیم تا بعدا بتوان به صورت دستی بررسی کرد
-#         print(f"Error verifying payment: {e}")
-#         error_message = 'خطا در ارتباط با درگاه برای تأیید تراکنش. لطفاً با پشتیبانی تماس بگیرید.'
-#         return render(request, 'store/payment_result.html', {'error': error_message})
-    
-
-# def search(request):
-#     query = request.GET.get('q', None)
-#     products = Product.objects.filter(available=True)
-#     if query:
-#         products = products.filter(
-#             Q(name__icontains=query) | 
-#             Q(description__icontains=query)
-#         )
-#     context = {
-#         'query': query,
-#         'products': products
-#     }
-#     return render(request, 'store/product/search_results.html', context)
-
-
-# def about_page(request):
-#     context = {} 
-#     return render(request, 'store/about.html', context)
-
-
-# @login_required(login_url='login')
-# def profile(request):
-#     customer = request.user.customer
-#     orders = Order.objects.filter(customer=customer, complete=True).order_by('-date_ordered')
-#     context = {
-#         'orders': orders
-#     }
-#     return render(request, 'store/profile.html', context)
-
-
-# @login_required(login_url='login')
-# def order_detail(request, order_id):
-#     customer = request.user.customer
-#     # بررسی امنیتی: پیدا کردن سفارش که هم ID درست را داشته باشد و هم متعلق به کاربر فعلی باشد
-#     order = get_object_or_404(Order, id=order_id, customer=customer, complete=True)
-    
-#     order_items = order.orderitem_set.all()
-#     shipping_address = order.shippingaddress_set.first()
-
-#     context = {
-#         'order': order,
-#         'order_items': order_items,
-#         'shipping_address': shipping_address,
-#     }
-#     return render(request, 'store/order_detail.html', context)
-
-
-# # store/views.py
-
-# # ... (سایر import ها)
-
-# @csrf_exempt
-# def send_otp(request):
-#     if request.method == "POST":
-#         phone = request.POST.get("phone")
-#         if not phone:
-#             return JsonResponse({"error": "شماره موبایل الزامی است."}, status=400)
-
-#         otp = str(random.randint(1000, 9999))
-#         cache_key = f"otp_{phone}"
-
-#         print(f"\n--- [SEND OTP] ---")
-#         print(f"Phone: {phone}")
-#         print(f"Generated OTP: {otp}")
-#         print(f"Cache Key being set: {cache_key}")
-
-#         # ذخیره در کَش
-#         cache.set(cache_key, otp, timeout=120)
-
-#         # --- تست فوری ---
-#         # بلافاصله بعد از ذخیره، دوباره آن را می‌خوانیم تا ببینیم آیا واقعا ذخیره شده است یا نه
-#         test_read_value = cache.get(cache_key)
-#         print(f"Value read back from cache IMMEDIATELY: {test_read_value}")
-#         if test_read_value is None:
-#             print("[FATAL ERROR] Cache is NOT working. Data was not set.")
-#         # --- پایان تست فوری ---
-
-#         # ... بقیه کد ارسال پیامک شما ...
-#         # (این بخش را برای سادگی حذف می‌کنم، چون می‌دانیم کار می‌کند)
-#         # فرض می‌کنیم ارسال موفق است
-#         return JsonResponse({"message": "کد تأیید ارسال شد."})
-
-#     return JsonResponse({"error": "درخواست نامعتبر."}, status=405)
-
-
-# @csrf_exempt
-# def verify_otp(request):
-#     if request.method == "POST":
-#         phone = request.POST.get("phone")
-#         code = request.POST.get("code")
-        
-#         cache_key = f"otp_{phone}"
-
-#         print(f"\n--- [VERIFY OTP] ---")
-#         print(f"Phone received for verification: {phone}")
-#         print(f"Code entered by user: {code}")
-#         print(f"Cache Key being read: {cache_key}")
-
-#         saved_code = cache.get(cache_key)
-#         print(f"Value read from cache: {saved_code}")
-
-#         if saved_code and str(saved_code) == str(code):
-#             print("[SUCCESS] Codes matched!")
-
-#             # --- بخش کلیدی اصلاح شده ---
-#             # 1. کلید تایید را در session قرار بده
-#             request.session['phone_verified'] = phone
-            
-#             # 2. داده‌های موقت OTP را از کش و سشن پاک کن
-#             cache.delete(cache_key)
-#             next_url = request.session.pop('next_url', reverse('store:checkout'))
-
-#             # 3. یک مشتری برای این شماره پیدا یا ایجاد کن (برای ثبت سفارش لازم است)
-#             # این کار کاربر را لاگین نمی‌کند، فقط یک رکورد مشتری برای پیگیری سفارش ایجاد می‌کند
-#             customer, created = Customer.objects.get_or_create(
-#                 phone_number=phone,
-#                 defaults={'name': f"کاربر مهمان {phone}"}
-#             )
-#             # اگر می‌خواهید برای هر مشتری مهمان یک یوزر جنگو هم داشته باشید (برای مدیریت راحت‌تر در ادمین)
-#             # می‌توانید این بخش را هم اضافه کنید، اما کاربر را لاگین نمی‌کنیم
-#             if created:
-#                 user = User.objects.create_user(username=phone, password=User.objects.make_random_password())
-#                 customer.user = user
-#                 customer.save()
-#             # --------------------------------
-
-#             return JsonResponse({
-#                 "success": True, 
-#                 "message": "اعتبارسنجی موفق. در حال بازگشت به فرآیند خرید...",
-#                 "redirect_url": next_url
-#             })
-#         else:
-#             print(f"[FAILURE] Codes did NOT match. Saved: {saved_code}, Entered: {code}")
-#             return JsonResponse({"success": False, "message": "کد وارد شده نادرست یا منقضی شده است."})
-    
-#     return JsonResponse({"error": "درخواست نامعتبر."}, status=405)
-
-
-# def otp_page(request):
-#     return render(request, 'store/otp_page.html')
-# حححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححححح
 
 
 from asyncio.log import logger
@@ -678,7 +224,8 @@ def verify_otp(request):
                     complete=False, 
                     total_price=final_total_price, # قیمت نهایی شامل پست
                     shipping_method=shipping_method,
-                    shipping_cost=final_shipping_cost
+                    shipping_cost=final_shipping_cost,
+                    status='pending'
                 )
 
                 # 6. ایجاد آیتم‌های سفارش
@@ -704,12 +251,12 @@ def verify_otp(request):
 
                 # 8. اتصال به درگاه پرداخت
                 # تبدیل تومان به ریال برای درگاه (ضرب در 10)
-                total_price_rial = int(final_total_price * 10)
+                amount_toman = int(final_total_price)
                 callback_url = request.build_absolute_uri(reverse('store:payment_verify'))
                 
                 payment_data = {
                     'pin': settings.MR_PARDDAKHT_API_KEY,
-                    'amount': total_price_rial,
+                    'amount': amount_toman,
                     'callback': callback_url,
                     'order_id': str(order.id),
                     'description': f'پرداخت سفارش شماره {order.id} | ارسال: {shipping_method}',
@@ -838,6 +385,7 @@ def payment_verify(request):
         logger.info(f"Payment verify response: {response_json}")
         if response_json.get('status') == 'success':
             order.complete = True
+            order.status = 'paid'
             order.save()
             request.cart.clear()
             request.session.pop('phone_verified', None) # پاک کردن سشن بعد از خرید موفق
@@ -860,16 +408,26 @@ def payment_verify(request):
 
 @login_required(login_url='login')
 def profile(request):
-    if not hasattr(request.user, 'customer'):
-        Customer.objects.create(user=request.user)
-    customer = request.user.customer
+    # تغییر مهم: استفاده از filter و first به جای get
+    # این کد می‌گوید: تمام مشتریانی که یوزرشان این است را بگیر، و اولی را به من بده.
+    customer = Customer.objects.filter(user=request.user).first()
+
+    # اگر مشتری اصلاً وجود نداشت، یکی بساز
+    if not customer:
+        customer = Customer.objects.create(
+            user=request.user,
+            name=request.user.username
+        )
+
     orders = Order.objects.filter(customer=customer, complete=True).order_by('-date_ordered')
-    context = {'orders': orders}
+    context = {
+        'orders': orders
+    }
     return render(request, 'store/profile.html', context)
 
 @login_required(login_url='login')
 def order_detail(request, order_id):
-    customer = request.user.customer
+    customer = Customer.objects.get(user=request.user)
     order = get_object_or_404(Order, id=order_id, customer=customer, complete=True)
     context = {
         'order': order,

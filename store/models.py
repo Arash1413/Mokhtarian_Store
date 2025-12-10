@@ -93,18 +93,33 @@ class Customer(models.Model):
     
 
 class Order(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'در انتظار پرداخت'),
+        ('paid', 'ثبت شده / در صف بررسی'),
+        ('processing', 'در حال آماده‌سازی'),
+        ('shipped', 'تحویل پست شده'),
+        ('delivered', 'تحویل مشتری شده'),
+        ('cancelled', 'لغو شده'),
+    ]
+
     SHIPPING_CHOICES = [
         ('mahex', 'ماهکس (پس‌کرایه)'),
         ('post', 'پست پیشتاز'),
     ]
     # ... فیلدهای قبلی ...
-    shipping_method = models.CharField(max_length=20, choices=SHIPPING_CHOICES, default='mahex')
-    shipping_cost = models.DecimalField(max_digits=10, decimal_places=0, default=0)
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, blank=True, null=True)
     date_ordered = models.DateTimeField(auto_now_add=True)
-    total_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True)
     complete = models.BooleanField(default=False)
     transaction_id = models.CharField(max_length=200, null=True)
+    shipping_method = models.CharField(max_length=20, null=True, blank=True)
+    shipping_cost = models.DecimalField(max_digits=10, decimal_places=0, default=0)
+    
+    # --- فیلدهای جدید ---
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='وضعیت سفارش')
+    tracking_code = models.CharField(max_length=50, null=True, blank=True, verbose_name='کد رهگیری پستی')
+    # -------------------
+
     history = HistoricalRecords()
 
     def __str__(self):

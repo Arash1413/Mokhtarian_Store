@@ -40,9 +40,10 @@ class ShippingAddressInline(admin.StackedInline): # از StackedInline برای 
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['id', 'customer', 'date_ordered', 'complete', 'get_cart_total', 'get_cart_items']
-    list_filter = ['complete', 'date_ordered']
-    search_fields = ['id', 'customer__name']
+    list_display = ['id', 'customer', 'status', 'tracking_code', 'date_ordered', 'complete', 'get_cart_total']
+    list_filter = ['status', 'complete', 'date_ordered'] # فیلتر بر اساس وضعیت اضافه شد
+    search_fields = ['id', 'customer__name', 'tracking_code']
+    list_editable = ['status', 'tracking_code'] # این خط اجازه ویرایش سریع را می‌دهد
     inlines = [ShippingAddressInline, OrderItemInline]
 
 @admin.register(Attribute)
