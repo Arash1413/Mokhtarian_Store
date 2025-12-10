@@ -472,7 +472,7 @@ from .models import Category, Product, Order, OrderItem, ShippingAddress, Custom
 from .forms import CustomUserCreationForm, ShippingForm
 from cart.cart import Cart
 from .utils_payment import debug_prepare_payment_data, debug_handle_response
-
+from django.contrib.auth import login
 # ==============================================================================
 # VIEWS مربوط به نمایش محصولات و صفحات عمومی (بدون تغییر)
 # ==============================================================================
@@ -520,17 +520,40 @@ def cart(request):
 # ==============================================================================
 
 def register(request):
+    # اگر کاربر لاگین است، اجازه دسترسی نده
     if request.user.is_authenticated:
         return redirect('store:product_list')
+
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
+            # 1. ساخت یوزر اصلی جنگو
             user = form.save()
-            Customer.objects.get_or_create(user=user, defaults={'name': user.username})
+            
+            # 2. دریافت شماره موبایل پاک‌سازی شده از فرم
+            phone = form.cleaned_data.get('phone_number')
+
+            # 3. ایجاد یا آپدیت مدل Customer با شماره موبایل
+            # نکته: ما از get_or_create استفاده می‌کنیم تا اگر رکوردی ناقص وجود داشت، هندل شود
+            customer, created = Customer.objects.get_or_create(
+                user=user,
+                defaults={
+                    'name': user.username,
+                    'phone_number': phone
+                }
+            )
+            
+            # اگر مشتری از قبل وجود داشت (که بعید است چون یوزر تازه ساخته شده) اما محض اطمینان آپدیت می‌کنیم
+            if not created:
+                customer.phone_number = phone
+                customer.save()
+
+            # 4. ورود خودکار کاربر
             login(request, user)
             return redirect('/')
     else:
         form = CustomUserCreationForm()
+    
     return render(request, 'registration/register.html', {'form': form})
 
 # ==============================================================================
