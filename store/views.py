@@ -459,6 +459,7 @@ from .utils_payment import debug_prepare_payment_data, debug_handle_response
 from django.contrib.auth import login
 from .utils_shipping import calculate_shipping_cost
 import logging
+import secrets
 
 logger = logging.getLogger(__name__)
 
@@ -557,7 +558,8 @@ def send_otp(request):
         if cache.get(f"otp_sent_{phone}"):
             return JsonResponse({"error": "کد قبلاً ارسال شده است. لطفاً ۲ دقیقه صبر کنید."}, status=429)
 
-        otp = str(random.randint(100000, 999999))
+        otp = str(secrets.randbelow(899999) + 100000)
+
         cache_key = f"otp_{phone}"
         cache.set(cache_key, otp, timeout=120)
         cache.set(f"otp_sent_{phone}", True, timeout=120)
@@ -617,14 +619,59 @@ def verify_otp(request):
 
             try:
                 full_name = shipping_data.get('full_name', f"کاربر {phone}")
-                customer, created = Customer.objects.get_or_create(
-                    phone_number=phone,
-                    defaults={'name': full_name}
-                )
                 
-                if not created and not customer.name:
-                    customer.name = full_name
-                    customer.save()
+                # ==========================================================
+                # اصلاحیه: همگام‌سازی کاربر (User Sync Logic) ✅
+                # ==========================================================
+                customer = None
+                
+                if request.user.is_authenticated:
+                    # سناریوی ۱: کاربر لاگین است (اولویت با یوزر لاگین شده)
+                    
+                    # الف) آیا این کاربر قبلاً پروفایل مشتری داشته؟
+                    customer = Customer.objects.filter(user=request.user).first()
+                    
+                    if customer:
+                        # کاربر پروفایل دارد. اگر شماره جدیدی وریفای کرده، سعی می‌کنیم آپدیت کنیم
+                        if customer.phone_number != phone:
+                            # چک می‌کنیم این شماره متعلق به کاربر دیگری نباشد (Unique constraint)
+                            if not Customer.objects.filter(phone_number=phone).exclude(id=customer.id).exists():
+                                customer.phone_number = phone
+                                customer.save()
+                        
+                        # آپدیت نام اگر خالی بود
+                        if not customer.name:
+                            customer.name = full_name
+                            customer.save()
+                            
+                    else:
+                        # ب) کاربر لاگین است اما پروفایل ندارد.
+                        # چک می‌کنیم آیا قبلاً با این شماره خریدی به صورت مهمان انجام شده؟
+                        existing_guest = Customer.objects.filter(phone_number=phone, user__isnull=True).first()
+                        
+                        if existing_guest:
+                            # اکانت مهمان قدیمی را به این کاربر وصل می‌کنیم (Merge)
+                            customer = existing_guest
+                            customer.user = request.user
+                            customer.name = full_name
+                            customer.save()
+                        else:
+                            # هیچ سابقه‌ای نیست، یک مشتری جدید متصل به یوزر می‌سازیم
+                            customer = Customer.objects.create(
+                                user=request.user,
+                                phone_number=phone,
+                                name=full_name
+                            )
+                else:
+                    # سناریوی ۲: کاربر مهمان است (بدون تغییر نسبت به قبل)
+                    customer, created = Customer.objects.get_or_create(
+                        phone_number=phone,
+                        defaults={'name': full_name}
+                    )
+                    if not created and not customer.name:
+                        customer.name = full_name
+                        customer.save()
+                # ==========================================================
 
                 shipping_method = shipping_data.get('shipping_method', 'mahex')
                 total_weight = cart.get_total_weight()
@@ -636,6 +683,7 @@ def verify_otp(request):
                 
                 final_total_price = float(cart_total_price) + float(final_shipping_cost)
 
+                # ایجاد سفارش
                 order = Order.objects.create(
                     customer=customer, 
                     complete=False, 
@@ -701,7 +749,10 @@ def verify_otp(request):
                         "redirect_url": payment_url
                     })
                 else:
-                    order.delete()
+                    # تغییر وضعیت به جای حذف
+                    order.status = 'cancelled'
+                    order.save()
+                    
                     logger.error(f"Payment creation failed: {response_json}")
                     return JsonResponse({
                         "success": False, 
@@ -709,8 +760,11 @@ def verify_otp(request):
                     })
 
             except Exception as e:
+                # تغییر وضعیت به جای حذف در صورت بروز اکسپشن
                 if 'order' in locals() and order.id:
-                    order.delete()
+                    order.status = 'cancelled'
+                    order.save()
+                
                 logger.exception("Error processing verify_otp order creation")
                 print(f"Error processing order: {e}")
                 return JsonResponse({
@@ -768,15 +822,26 @@ def payment_verify(request):
         return render(request, 'store/payment_result.html', {'error': 'تراکنش نامعتبر است.'})
 
     try:
+        # فقط سفارش‌هایی که هنوز تکمیل نشده‌اند را بگیر
         order = Order.objects.get(transaction_id=transid, complete=False)
     except Order.DoesNotExist:
+        # اگر سفارش قبلاً تکمیل شده باشد
         if Order.objects.filter(transaction_id=transid, complete=True).exists():
             order_done = Order.objects.get(transaction_id=transid)
             return render(request, 'store/payment_result.html', {'order': order_done, 'success': True, 'already_verified': True})
         logger.error(f"Order with transid {transid} not found") 
         return render(request, 'store/payment_result.html', {'error': 'سفارش یافت نشد.'})
 
-    verify_data = {'pin': settings.MR_PARDDAKHT_API_KEY, 'amount': int(float(order.total_price) * 10), 'transid': transid}
+    # محاسبه مبلغ مورد انتظار به ریال
+    # نکته: بهتر است از int روی Decimal استفاده کنید تا دقت حفظ شود، اما طبق کد قبلی شما float هم کار می‌کند
+    expected_amount_rials = int(order.total_price * 10)
+
+    # آماده‌سازی داده‌ها برای تایید نهایی
+    verify_data = {
+        'pin': settings.MR_PARDDAKHT_API_KEY, 
+        'amount': expected_amount_rials, 
+        'transid': transid
+    }
 
     debug_prepare_payment_data(verify_data)
 
@@ -790,46 +855,61 @@ def payment_verify(request):
         logger.info(f"Payment verify response: {response_json}")
         
         if response_json.get('status') == 'success':
+            # ==================================================================
+            # اصلاحیه امنیتی: بررسی تطابق مبلغ (Amount Validation) 🛡️
+            # ==================================================================
+            # درگاه معمولاً مبلغ تایید شده را در پاسخ برمی‌گرداند.
+            # اگر کلید amount در پاسخ نبود، همان مبلغ ارسالی را فرض می‌گیریم (بسته به مستندات درگاه)
+            paid_amount = int(response_json.get('amount', expected_amount_rials))
+            
+            if paid_amount != expected_amount_rials:
+                # اگر مبلغ پرداخت شده کمتر یا بیشتر از مبلغ سفارش بود
+                logger.critical(f"Payment Fraud Attempt! Order: {order.id}, Expected: {expected_amount_rials}, Paid: {paid_amount}")
+                
+                order.status = 'cancelled' # یا یک وضعیت خاص مثل 'fraud_check'
+                order.save()
+                
+                return render(request, 'store/payment_result.html', {
+                    'error': 'مبلغ پرداخت شده با مبلغ سفارش مغایرت دارد. تراکنش لغو شد.'
+                })
+            # ==================================================================
+
+            # --- پرداخت و مبلغ تایید شد ---
             order.complete = True
             order.status = 'paid'
             
-            # ==================================================================
-            # اصلاحیه مهم: کسر موجودی انبار پس از پرداخت موفق ✅
-            # ==================================================================
+            # کسر موجودی انبار (از اصلاحات قبلی)
             for item in order.orderitem_set.all():
                 product = item.product
-                # بررسی می‌کنیم اگر موجودی کافی بود، کم کن
                 if product.stock >= item.quantity:
                     product.stock -= item.quantity
                     product.save()
                 else:
-                    # اگر در لحظه پرداخت، موجودی تمام شده بود (تداخل همزمان)
-                    # اینجا موجودی را صفر می‌کنیم و لاگ می‌زنیم
-                    # می‌توان وضعیت سفارش را به "نیاز به بررسی" تغییر داد
-                    logger.warning(f"Product {product.id} stock insufficient for Order {order.id}. Stock reset to 0.")
+                    logger.warning(f"Order {order.id}: Product {product.id} stock was {product.stock}, needed {item.quantity}. Set to 0.")
                     product.stock = 0
                     product.save()
-            # ==================================================================
 
             order.save()
+            
+            # پاک‌سازی
             request.cart.clear()
             request.session.pop('phone_verified', None)
             request.session.pop('next_url', None)
+            
             return render(request, 'store/payment_result.html', {'order': order, 'success': True})
         else:
+            # پرداخت ناموفق
             error_message = response_json.get('message', 'تراکنش توسط درگاه تأیید نشد.')
             logger.error(f"Payment verification failed: {response_json}")
             
-            # به جای حذف کامل سفارش، آن را به عنوان کنسل شده یا ناموفق نگه دارید
-            # تا کاربر در پروفایل خود ببیند که تراکنش ناموفق داشته است
-            order.status = 'cancelled' # تغییر وضعیت به جای حذف
+            # تغییر وضعیت به جای حذف (از اصلاحات قبلی)
+            order.status = 'cancelled'
             order.save()
             
             return render(request, 'store/payment_result.html', {'error': error_message})
             
     except requests.exceptions.RequestException as e:
         logger.exception("Error verifying payment with gateway")
-        print(f"Error verifying payment: {e}")
         error_message = 'خطا در ارتباط با درگاه. لطفاً با پشتیبانی تماس بگیرید.'
         return render(request, 'store/payment_result.html', {'error': error_message})
 
