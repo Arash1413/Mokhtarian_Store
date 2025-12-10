@@ -5,48 +5,58 @@
 <div class="container my-5">
     <div class="row justify-content-center">
         <div class="col-md-6 col-lg-5">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4 p-md-5">
 
-                    <!-- بخش اول: دریافت شماره موبایل -->
-                    <div id="phone-section">
-                        <h2 class="text-center fw-bold mb-3">ورود یا ادامه خرید</h2>
-                        <p class="text-center text-muted mb-4">برای ادامه، شماره موبایل خود را وارد کنید تا کد تایید برایتان ارسال شود.</p>
-                        
-                        <form id="phone-form">
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                <label for="phone" class="form-label">شماره موبایل</label>
-                                <input type="tel" name="phone" id="phone" class="form-control form-control-lg text-center" placeholder="09123456789" required autocomplete="off">
-                            </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg fw-bold">ارسال کد تایید</button>
-                            </div>
-                        </form>
+                    <div class="text-center mb-4">
+                        <i class="bi bi-shield-lock text-primary" style="font-size: 3rem;"></i>
+                        <h2 class="fw-bold mt-3">تایید شماره موبایل</h2>
+                        <p class="text-muted">
+                            کد تایید برای شماره 
+                            <span class="fw-bold text-dark" dir="ltr">{{ phone }}</span> 
+                            ارسال شد.
+                        </p>
                     </div>
 
-                    <!-- بخش دوم: دریافت کد تایید (در ابتدا مخفی است) -->
-                    <div id="verify-section" style="display: none;">
-                        <h2 class="text-center fw-bold mb-3">کد تایید را وارد کنید</h2>
-                        <p class="text-center text-muted mb-4">کد 6 رقمی ارسال شده به شماره <strong id="display-phone" class="d-block mt-2"></strong> را وارد نمایید.</p>
-                        
-                        <form id="verify-form">
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                <label for="code" class="form-label">کد تایید</label>
-                                <input type="text" name="code" id="code" class="form-control form-control-lg text-center" required autocomplete="off" inputmode="numeric" pattern="\d{6}">
-                            </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-success btn-lg fw-bold">تایید و ادامه</button>
-                            </div>
-                        </form>
-                        <div class="text-center mt-3">
-                            <a href="#" id="change-phone-link">تغییر شماره موبایل</a>
+                    <!-- فرم مخفی برای توکن CSRF -->
+                    <form style="display: none;">{% csrf_token %}</form>
+
+                    <!-- فرم دریافت کد -->
+                    <form id="verify-form">
+                        <div class="mb-4">
+                            <label for="code" class="form-label text-muted small">کد ۶ رقمی را وارد کنید</label>
+                            <input type="text" name="code" id="code" 
+                                   class="form-control form-control-lg text-center tracking-widest" 
+                                   placeholder="- - - - - -" 
+                                   maxlength="6"
+                                   inputmode="numeric" 
+                                   pattern="\d*"
+                                   required 
+                                   autocomplete="one-time-code"
+                                   style="letter-spacing: 10px; font-weight: bold;">
                         </div>
-                    </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" id="submit-btn" class="btn btn-primary btn-lg fw-bold shadow-sm">
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                <span class="btn-text">تایید و پرداخت</span>
+                            </button>
+                            
+                            <!-- دکمه بازگشت به چک‌اوت برای اصلاح شماره -->
+                            <a href="{% url 'store:checkout' %}" class="btn btn-outline-secondary btn-sm mt-2">
+                                اصلاح شماره موبایل
+                            </a>
+                        </div>
+                    </form>
                     
-                    <!-- بخش نمایش پیام‌ها (موفقیت یا خطا) -->
-                    <div id="message-area" class="mt-4"></div>
+                    <div class="text-center mt-4">
+                        <button id="resend-btn" class="btn btn-link text-decoration-none text-muted p-0" disabled>
+                            ارسال مجدد کد (<span id="timer">60</span>)
+                        </button>
+                    </div>
+
+                    <!-- بخش نمایش پیام‌ها -->
+                    <div id="message-area" class="mt-3"></div>
 
                 </div>
             </div>
@@ -56,100 +66,120 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // گرفتن تمام المان‌های لازم از صفحه
-    const phoneForm = document.getElementById('phone-form');
+    const userPhone = "{{ phone }}"; // دریافت شماره از ویو جنگو
     const verifyForm = document.getElementById('verify-form');
-    const phoneSection = document.getElementById('phone-section');
-    const verifySection = document.getElementById('verify-section');
     const messageArea = document.getElementById('message-area');
-    const changePhoneLink = document.getElementById('change-phone-link');
-    
-    let userPhone = ''; // متغیری برای ذخیره شماره موبایل کاربر
+    const submitBtn = document.getElementById('submit-btn');
+    const resendBtn = document.getElementById('resend-btn');
+    const timerSpan = document.getElementById('timer');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    let countdownInterval;
 
-    // رویداد برای فرم اول (ارسال شماره موبایل)
-    phoneForm.addEventListener('submit', function(e) {
-        e.preventDefault(); // جلوگیری از رفرش شدن صفحه
-        userPhone = document.getElementById('phone').value;
-        const formData = new FormData(phoneForm);
-        formData.append('phone', userPhone);
+    // تابع شروع تایمر
+    function startTimer(duration) {
+        let timer = duration, seconds;
+        resendBtn.disabled = true;
+        resendBtn.classList.add('text-muted');
         
-        // نمایش پیام "در حال ارسال..."
-        messageArea.innerHTML = `<div class="alert alert-info">در حال ارسال کد...</div>`;
+        clearInterval(countdownInterval); // پاک کردن تایمر قبلی اگر وجود دارد
+
+        countdownInterval = setInterval(function () {
+            seconds = parseInt(timer % 60, 10);
+            timerSpan.textContent = seconds;
+
+            if (--timer < 0) {
+                clearInterval(countdownInterval);
+                resendBtn.disabled = false;
+                resendBtn.classList.remove('text-muted');
+                resendBtn.classList.add('text-primary');
+                resendBtn.innerHTML = 'ارسال مجدد کد';
+            }
+        }, 1000);
+    }
+
+    // تابع ارسال کد OTP
+    function sendOTP() {
+        messageArea.innerHTML = `<div class="alert alert-info py-2 small">در حال ارسال کد تایید...</div>`;
+        
+        const formData = new FormData();
+        formData.append('phone', userPhone);
 
         fetch("{% url 'store:send_otp' %}", {
             method: 'POST',
             body: formData,
             headers: {
-                // توکن CSRF را از فرم می‌خوانیم
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                'X-CSRFToken': csrfToken
             }
         })
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                // اگر خطایی از سمت سرور آمد، آن را نمایش بده
-                messageArea.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                messageArea.innerHTML = `<div class="alert alert-danger py-2 small">${data.error}</div>`;
             } else {
-                // اگر موفق بود، پیام موفقیت را نمایش بده و به مرحله بعد برو
-                messageArea.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
-                phoneSection.style.display = 'none'; // فرم اول را مخفی کن
-                verifySection.style.display = 'block'; // فرم دوم را نمایش بده
-                document.getElementById('display-phone').innerText = userPhone;
-                document.getElementById('code').focus(); // فوکوس روی فیلد کد
+                messageArea.innerHTML = `<div class="alert alert-success py-2 small">کد تایید ارسال شد.</div>`;
+                startTimer(60); // شروع تایمر 60 ثانیه‌ای
+                document.getElementById('code').focus();
             }
+        })
+        .catch(err => {
+            console.error(err);
+            messageArea.innerHTML = `<div class="alert alert-danger py-2 small">خطا در ارتباط با سرور.</div>`;
         });
+    }
+
+    // ارسال خودکار کد به محض لود شدن صفحه
+    sendOTP();
+
+    // رویداد دکمه ارسال مجدد
+    resendBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        sendOTP();
     });
 
-    // رویداد برای فرم دوم (تایید کد)
+    // رویداد تایید کد
     verifyForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        const formData = new FormData(verifyForm);
-        formData.append('phone', userPhone); // شماره موبایل ذخیره شده را به فرم دوم هم اضافه می‌کنیم
+        
+        // حالت لودینگ دکمه
+        submitBtn.disabled = true;
+        submitBtn.querySelector('.spinner-border').classList.remove('d-none');
+        submitBtn.querySelector('.btn-text').textContent = 'در حال پردازش...';
+        messageArea.innerHTML = '';
 
-        messageArea.innerHTML = `<div class="alert alert-info">در حال بررسی کد...</div>`;
+        const formData = new FormData(verifyForm);
+        formData.append('phone', userPhone);
 
         fetch("{% url 'store:verify_otp' %}", {
             method: 'POST',
             body: formData,
             headers: {
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                'X-CSRFToken': csrfToken
             }
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // اگر کد صحیح بود، پیام موفقیت را نمایش بده
-                messageArea.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
-                // و کاربر را به آدرسی که سرور گفته (مثلا صفحه checkout) هدایت کن
-                window.location.href = data.redirect_url;
+                messageArea.innerHTML = `<div class="alert alert-success py-2 small">${data.message}</div>`;
+                // هدایت به درگاه پرداخت
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 1000);
             } else {
-                // اگر کد غلط بود، پیام خطا را نمایش بده
-                messageArea.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+                messageArea.innerHTML = `<div class="alert alert-danger py-2 small">${data.message}</div>`;
+                // بازنشانی دکمه
+                submitBtn.disabled = false;
+                submitBtn.querySelector('.spinner-border').classList.add('d-none');
+                submitBtn.querySelector('.btn-text').textContent = 'تایید و پرداخت';
             }
+        })
+        .catch(err => {
+            console.error(err);
+            messageArea.innerHTML = `<div class="alert alert-danger py-2 small">خطا در پردازش درخواست.</div>`;
+            submitBtn.disabled = false;
+            submitBtn.querySelector('.spinner-border').classList.add('d-none');
+            submitBtn.querySelector('.btn-text').textContent = 'تایید و پرداخت';
         });
-    });
-
-    // رویداد برای لینک "تغییر شماره موبایل"
-    changePhoneLink.addEventListener('click', function(e) {
-        e.preventDefault();
-        verifySection.style.display = 'none'; // فرم دوم را مخفی کن
-        phoneSection.style.display = 'block'; // فرم اول را نمایش بده
-        messageArea.innerHTML = ''; // پیام‌ها را پاک کن
-        document.getElementById('phone').focus();
     });
 });
 </script>
 {% endblock %}
-
-<!-- <form id="otpForm" method="POST" action="{% url 'store:send_otp' %}">
-  {% csrf_token %}
-  <input type="text" name="phone" placeholder="شماره موبایل">
-  <button type="submit">ارسال کد</button>
-</form>
-
-<form id="verifyForm" method="POST" action="{% url 'store:verify_otp' %}">
-  {% csrf_token %}
-  <input type="text" name="phone" placeholder="شماره موبایل">
-  <input type="text" name="code" placeholder="کد تأیید">
-  <button type="submit">تأیید</button>
-</form> -->

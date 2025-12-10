@@ -561,12 +561,13 @@ def register(request):
 # ==============================================================================
 
 def otp_page(request):
-    # اگر کاربر از قبل لاگین است (مثلا با ثبت نام سنتی)، او را مستقیم به checkout بفرست
-    if request.user.is_authenticated and hasattr(request.user, 'customer'):
-        request.session['phone_verified'] = request.user.customer.phone_number
+    # شماره موبایلی که در مرحله Checkout وارد شده را می‌گیریم
+    phone = request.session.get('pending_phone')
+    if not phone:
+        messages.error(request, "لطفاً ابتدا اطلاعات ارسال را تکمیل کنید.")
         return redirect('store:checkout')
-    return render(request, 'store/otp_page.html')
-
+        
+    return render(request, 'store/otp_page.html', {'phone': phone})
 
 @csrf_exempt
 def send_otp(request):
@@ -615,22 +616,131 @@ def send_otp(request):
 @csrf_exempt
 def verify_otp(request):
     if request.method == "POST":
-        phone = request.POST.get("phone")
+        # دریافت کد از درخواست کاربر
+        # اگر فرانت‌اند شما phone را نمی‌فرستد، از سشن بگیرید
+        phone = request.POST.get("phone") or request.session.get('pending_phone')
         code = request.POST.get("code")
 
         if not phone or not code:
-            return JsonResponse({"success": False, "message": "شماره موبایل و کد الزامی است."}, status=400)
+            return JsonResponse({"success": False, "message": "اطلاعات ناقص است."}, status=400)
 
+        # بررسی صحت کد OTP
         saved_code = cache.get(f"otp_{phone}")
+        
         if saved_code and str(saved_code) == str(code):
-            request.session['phone_verified'] = phone
+            # --- کد صحیح است: شروع فرآیند ثبت سفارش ---
+            
+            # 1. پاک کردن کد از کش
             cache.delete(f"otp_{phone}")
-            next_url = request.session.pop('next_url', reverse('store:checkout'))
-            return JsonResponse({
-                "success": True, 
-                "message": "اعتبارسنجی موفق. در حال بازگشت به فرآیند خرید...",
-                "redirect_url": next_url
-            })
+            
+            # 2. دریافت اطلاعات سبد خرید و اطلاعات ارسال از سشن
+            cart = request.cart
+            shipping_data = request.session.get('shipping_data')
+            
+            if not shipping_data or len(cart) == 0:
+                return JsonResponse({
+                    "success": False, 
+                    "message": "اطلاعات سبد خرید یا آدرس یافت نشد. لطفاً مجدد تلاش کنید.",
+                    "redirect_url": reverse('store:checkout')
+                })
+
+            try:
+                # 3. پیدا کردن یا ساختن مشتری
+                full_name = shipping_data.get('full_name', f"کاربر {phone}")
+                customer, created = Customer.objects.get_or_create(
+                    phone_number=phone,
+                    defaults={'name': full_name}
+                )
+                
+                # اگر مشتری وجود داشت اما نام نداشت، نامش را آپدیت کن (اختیاری)
+                if not created and not customer.name:
+                    customer.name = full_name
+                    customer.save()
+
+                # 4. ایجاد سفارش
+                total_price_toman = cart.get_total_price()
+                order = Order.objects.create(
+                    customer=customer, 
+                    complete=False, 
+                    total_price=total_price_toman
+                )
+
+                # 5. ایجاد آیتم‌های سفارش
+                for item in cart:
+                    OrderItem.objects.create(
+                        order=order,
+                        product=item['product'],
+                        quantity=item['quantity']
+                    )
+
+                # 6. ذخیره آدرس در دیتابیس (با استفاده از داده‌های سشن)
+                ShippingAddress.objects.create(
+                    customer=customer,
+                    order=order,
+                    full_name=shipping_data['full_name'],
+                    phone_number=shipping_data['phone_number'],
+                    address=shipping_data['address'],
+                    city=shipping_data['city'],
+                    state=shipping_data['state'],
+                    zipcode=shipping_data['zipcode']
+                )
+
+                # 7. اتصال به درگاه پرداخت
+                total_price_rial = int(float(total_price_toman) * 10)
+                callback_url = request.build_absolute_uri(reverse('store:payment_verify'))
+                
+                payment_data = {
+                    'pin': settings.MR_PARDDAKHT_API_KEY,
+                    'amount': total_price_rial,
+                    'callback': callback_url,
+                    'order_id': str(order.id),
+                    'description': f'پرداخت سفارش شماره {order.id}',
+                    'mobile': phone,
+                }
+
+                # لاگ کردن برای دیباگ (اختیاری)
+                debug_prepare_payment_data(payment_data)
+
+                request_url = 'https://panel.aqayepardakht.ir/api/v2/create'
+                headers = {'Content-Type': 'application/json'}
+
+                response = requests.post(request_url, json=payment_data, headers=headers, timeout=10)
+                response.raise_for_status()
+                response_json = response.json()
+
+                if response_json.get('status') == 'success':
+                    transid = response_json.get('transid')
+                    order.transaction_id = transid
+                    order.save()
+                    
+                    # پاک کردن داده‌های موقت سشن
+                    del request.session['shipping_data']
+                    # del request.session['pending_phone'] # شاید برای وریفای نهایی لازم شود، فعلا نگه دارید
+
+                    # بازگرداندن لینک پرداخت به جاوااسکریپت برای ریدایرکت
+                    payment_url = f"https://panel.aqayepardakht.ir/startpay/{transid}"
+                    return JsonResponse({
+                        "success": True, 
+                        "message": "در حال انتقال به درگاه پرداخت...",
+                        "redirect_url": payment_url
+                    })
+                else:
+                    order.delete()
+                    return JsonResponse({
+                        "success": False, 
+                        "message": f"خطا در درگاه پرداخت: {response_json.get('message')}"
+                    })
+
+            except Exception as e:
+                # اگر خطایی رخ داد (مثل قطعی اینترنت یا دیتابیس)
+                if 'order' in locals() and order.id:
+                    order.delete()
+                print(f"Error processing order: {e}")
+                return JsonResponse({
+                    "success": False, 
+                    "message": "خطا در ثبت سفارش. لطفاً دقایقی دیگر تلاش کنید."
+                })
+
         else:
             return JsonResponse({"success": False, "message": "کد وارد شده نادرست یا منقضی شده است."})
     
@@ -645,71 +755,27 @@ def checkout(request):
     if len(cart) == 0:
         return redirect('store:product_list')
 
-    phone_verified = request.session.get('phone_verified')
-    if not phone_verified:
-        messages.info(request, 'برای ادامه خرید لطفاً شماره موبایل خود را تأیید کنید.')
-        request.session['next_url'] = request.path
-        return redirect('store:otp_page')
-
     if request.method == 'POST':
         form = ShippingForm(request.POST)
         if form.is_valid():
-            customer, created = Customer.objects.get_or_create(
-                phone_number=phone_verified,
-                defaults={'name': form.cleaned_data.get('full_name', f"کاربر {phone_verified}")}
-            )
-
-            total_price_toman = cart.get_total_price()
-            order = Order.objects.create(customer=customer, complete=False, total_price=total_price_toman)
-            for item in cart:
-                OrderItem.objects.create(order=order, product=item['product'], quantity=item['quantity'])
-            shipping_address = form.save(commit=False)
-            shipping_address.customer = customer
-            shipping_address.order = order
-            shipping_address.save()
-
-            total_price_rial = int(total_price_toman)
-            callback_url = request.build_absolute_uri(reverse('store:payment_verify'))
-            payment_data = {
-                'pin': settings.MR_PARDDAKHT_API_KEY, 'amount': total_price_rial, 'callback': callback_url,
-                'order_id': str(order.id), 'description': f'پرداخت سفارش شماره {order.id}',
-                'mobile': phone_verified,
-            }
-
-            debug_prepare_payment_data(payment_data)
-
-            request_url = 'https://panel.aqayepardakht.ir/api/v2/create'
-            headers = {'Content-Type': 'application/json'}
-
-            try:
-                response = requests.post(request_url, json=payment_data, headers=headers, timeout=10)
-                response.raise_for_status()
-                response_json = response.json()
-
-                debug_handle_response(response_json)
-
-                logger.info(f"Create payment response: {response_json}")
-
-                if response_json.get('status') == 'success':
-                    transid = response_json.get('transid')
-                    order.transaction_id = transid
-                    order.save()
-                    return redirect(f"https://panel.aqayepardakht.ir/startpay/{transid}")
-                else:
-                    order.delete()
-                    error_message = response_json.get('message', 'خطا در ایجاد تراکنش.')
-                    logger.error(f"Payment creation failed: {response_json}")
-                    return render(request, 'store/checkout.html', {'form': form, 'cart': cart, 'error': error_message})
-            except requests.exceptions.RequestException as e:
-                order.delete()
-                logger.exception("Error connecting to payment gateway")
-                print(f"Error connecting to payment gateway: {e}")
-                error_message = 'خطا در اتصال به درگاه پرداخت.'
-                return render(request, 'store/checkout.html', {'form': form, 'cart': cart, 'error': error_message})
-        else:
-            logger.warning(f"invalid shipping form: {form.errors}")
+            # 1. اطلاعات فرم را تمیز می‌کنیم اما در دیتابیس ذخیره نمی‌کنیم
+            shipping_data = form.cleaned_data
+            
+            # 2. شماره موبایل را برای ارسال پیامک جدا می‌کنیم
+            phone_number = shipping_data.get('phone_number')
+            
+            # 3. ذخیره اطلاعات در Session برای استفاده در مرحله بعد
+            # نکته: داده‌ها باید قابل سریالایز شدن باشند (JSON)، پس آبجکت‌های مدل را ذخیره نمی‌کنیم
+            request.session['shipping_data'] = shipping_data
+            request.session['pending_phone'] = phone_number
+            
+            # 4. هدایت به صفحه OTP
+            return redirect('store:otp_page')
     else:
-        form = ShippingForm()
+        # اگر کاربر قبلا اطلاعاتی وارد کرده بود، فرم را با آن پر کن
+        saved_data = request.session.get('shipping_data')
+        form = ShippingForm(initial=saved_data) if saved_data else ShippingForm()
+
     context = {'form': form, 'cart': cart}
     return render(request, 'store/checkout.html', context)
 
