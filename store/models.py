@@ -27,6 +27,8 @@ class Brand(models.Model):
         return self.name
         
 class Product(models.Model):
+    wholesale_min_qty = models.PositiveIntegerField(default=0, help_text="حداقل تعداد برای اعمال قیمت عمده (0 یعنی غیرفعال)")
+    wholesale_price = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True, help_text="قیمت محصول در صورت خرید عمده")
     category = models.ForeignKey(Category, related_name="products", on_delete=models.CASCADE)
     brand = models.ForeignKey(Brand, related_name='products', on_delete=models.CASCADE, null=True, blank=True) # <-- فیلد جدید # 
     name = models.CharField(max_length=200, db_index=True)
@@ -50,6 +52,14 @@ class Product(models.Model):
 
     def get_absolute_url(self):
         return reverse('store:product_detail', args=[self.slug])
+    
+    def get_current_price(self, quantity):
+        """
+        این متد قیمت را بر اساس تعداد ورودی محاسبه می‌کند
+        """
+        if self.wholesale_min_qty > 0 and self.wholesale_price and quantity >= self.wholesale_min_qty:
+            return self.wholesale_price
+        return self.price
 
     def __str__(self):
         return self.name
@@ -121,6 +131,7 @@ class OrderItem(models.Model):
     # نوع فیلد و مقدار پیش‌فرض آن بهبود یافت
     quantity = models.PositiveIntegerField(default=1)
     date_added = models.DateTimeField(auto_now_add=True)
+    price = models.DecimalField(max_digits=10, decimal_places=0, default=0) 
 
     @property
     def get_total(self):

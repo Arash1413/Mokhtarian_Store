@@ -686,7 +686,8 @@ def verify_otp(request):
                     OrderItem.objects.create(
                         order=order,
                         product=item['product'],
-                        quantity=item['quantity']
+                        quantity=item['quantity'],
+                        price=item['price'] # قیمت محاسبه شده (عمده یا عادی) را ذخیره کن
                     )
 
                 # 7. ذخیره آدرس در دیتابیس

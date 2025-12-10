@@ -17,9 +17,9 @@ class BrandAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'slug', 'price', 'old_price', 'is_bestseller', 'stock', 'available']
+    list_display = ['name', 'price', 'wholesale_price', 'wholesale_min_qty', 'stock', 'available']
     list_filter = ['available', 'created', 'updated', 'is_bestseller', 'brand']
-    list_editable = ['price', 'old_price', 'stock', 'available', 'is_bestseller']
+    list_editable = ['price', 'wholesale_price', 'wholesale_min_qty', 'stock', 'available']
     prepopulated_fields = {'slug': ('name',)}
     inlines = [ProductAttributeInline]
     search_fields = ['name', 'description']

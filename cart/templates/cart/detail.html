@@ -12,38 +12,68 @@
     <div class="row g-5">
         <!-- ستون سمت راست: لیست محصولات -->
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm rounded-3">
                 <div class="card-body p-4">
                     {% for item in cart %}
                         {% with product=item.product %}
                         <div class="row align-items-center mb-4 pb-4 border-bottom">
                             <!-- تصویر محصول -->
-                            <div class="col-md-2">
+                            <div class="col-md-2 text-center">
                                 <a href="{{ product.get_absolute_url }}">
-                                    <!-- <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}"> -->
                                      {% if product.image %}
-                                        <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}">
+                                        <img src="{{ product.image.url }}" class="img-fluid rounded border" alt="{{ product.name }}">
                                     {% else %}
-                                        <img src="{% static 'images/placeholder.png' %}" class="img-fluid rounded" alt="{{ product.name }}">
+                                        <img src="{% static 'images/placeholder.png' %}" class="img-fluid rounded border" alt="{{ product.name }}">
                                     {% endif %}
                                 </a>
                             </div>
                             <!-- نام محصول -->
                             <div class="col-md-4">
                                 <a href="{{ product.get_absolute_url }}" class="text-dark text-decoration-none fw-bold fs-5">{{ product.name }}</a>
-                                <p class="text-muted small">دسته‌بندی: {{ product.category.name }}</p>
+                                <p class="text-muted small mt-1">دسته‌بندی: {{ product.category.name }}</p>
                             </div>
+                            
                             <!-- تعداد -->
                             <div class="col-md-2">
-                                <label class="form-label small">تعداد</label>
-                                <input type="number" class="form-control form-control-sm text-center" value="{{ item.quantity }}" min="1">
-                                <!-- نکته: قابلیت آپدیت تعداد بعدا اضافه می‌شود -->
+                                <label class="form-label small text-muted">تعداد</label>
+                                <!-- فرم آپدیت تعداد (برای تغییر قیمت عمده/خرده نیاز است که با تغییر تعداد صفحه رفرش شود یا دکمه آپدیت داشته باشد) -->
+                                <form action="{% url 'cart:cart_add' product.id %}" method="post" class="d-flex align-items-center">
+                                    {% csrf_token %}
+                                    <!-- مقدار override_quantity=True باید در ویو هندل شود یا یک اینپوت مخفی باشد، اینجا ساده‌سازی شده -->
+                                    <input type="number" name="quantity" class="form-control form-control-sm text-center me-1" value="{{ item.quantity }}" min="1" style="max-width: 70px;">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary p-1" title="بروزرسانی تعداد">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                    <input type="hidden" name="override" value="True">
+                                </form>
                             </div>
-                            <!-- قیمت -->
+
+                            <!-- قیمت و وضعیت عمده/خرده -->
                             <div class="col-md-3 text-start">
-                                <span class="fw-bold fs-5">{{ item.total_price|floatformat:0 }} تومان</span>
-                                <p class="text-muted small">{{ item.price|floatformat:0 }} تومان (واحد)</p>
+                                <!-- قیمت کل آیتم -->
+                                <span class="fw-bold fs-5 d-block">{{ item.total_price|floatformat:0 }} تومان</span>
+                                
+                                <!-- قیمت واحد -->
+                                <span class="text-muted small">{{ item.price|floatformat:0 }} تومان (واحد)</span>
+
+                                <!-- منطق نمایش وضعیت قیمت -->
+                                <div class="mt-2">
+                                    {% if item.is_wholesale_applied %}
+                                        <!-- حالت ۱: قیمت عمده اعمال شده است -->
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                                            <i class="bi bi-check-all"></i> قیمت عمده اعمال شد
+                                        </span>
+                                    {% elif product.wholesale_min_qty > 0 %}
+                                        <!-- حالت ۲: هنوز به تعداد عمده نرسیده -->
+                                        <div class="alert alert-warning p-1 mb-0 mt-1 small" style="font-size: 0.75rem;">
+                                            <i class="bi bi-exclamation-circle"></i>
+                                            برای قیمت عمده ({{ product.wholesale_price|floatformat:0 }})، 
+                                            حداقل <strong>{{ product.wholesale_min_qty }}</strong> عدد سفارش دهید.
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
+
                             <!-- دکمه حذف -->
                             <div class="col-md-1 text-end">
                                 <form action="{% url 'cart:cart_remove' product.id %}" method="post">
@@ -57,10 +87,10 @@
                         {% endwith %}
                     {% empty %}
                         <div class="text-center p-5">
-                            <i class="bi bi-cart-x" style="font-size: 4rem; color: #ccc;"></i>
-                            <h4 class="mt-3">سبد خرید شما خالی است.</h4>
-                            <p class="text-muted">برای شروع، محصولات مورد نظر خود را به سبد اضافه کنید.</p>
-                            <a href="{% url 'store:product_list' %}" class="btn btn-primary mt-3">مشاهده محصولات</a>
+                            <i class="bi bi-cart-x display-1 text-muted opacity-25"></i>
+                            <h4 class="mt-4 fw-bold">سبد خرید شما خالی است.</h4>
+                            <p class="text-muted mb-4">برای شروع، محصولات مورد نظر خود را به سبد اضافه کنید.</p>
+                            <a href="{% url 'store:product_list' %}" class="btn btn-primary btn-lg fw-bold px-5">مشاهده محصولات</a>
                         </div>
                     {% endfor %}
                 </div>
@@ -70,29 +100,37 @@
         <!-- ستون سمت چپ: خلاصه سفارش -->
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm sticky-top" style="top: 100px;">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h4 class="fw-bold">خلاصه سفارش</h4>
+                </div>
                 <div class="card-body p-4">
-                    <h4 class="fw-bold mb-4">خلاصه سفارش</h4>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">تعداد کل محصولات</span>
-                        <span>{{ cart|length }} عدد</span>
-                    </div>
                     <div class="d-flex justify-content-between mb-3">
-                        <span class="text-muted">مبلغ کل</span>
-                        <span>{{ cart.get_total_price|floatformat:0 }} تومان</span>
+                        <span class="text-muted">تعداد اقلام</span>
+                        <span class="fw-bold">{{ cart|length }} عدد</span>
                     </div>
+                    
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">جمع کل</span>
+                        <span class="fw-bold">{{ cart.get_total_price|floatformat:0 }} تومان</span>
+                    </div>
+
+                    <div class="alert alert-light border small text-muted">
+                        <i class="bi bi-truck me-1"></i> هزینه ارسال در مرحله بعد محاسبه می‌شود.
+                    </div>
+
                     <hr>
-                    <div class="d-flex justify-content-between fw-bold fs-5 mt-3">
-                        <span>مبلغ قابل پرداخت</span>
-                        <span>{{ cart.get_total_price|floatformat:0 }} تومان</span>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+                        <span class="fs-5 fw-bold text-dark">مبلغ قابل پرداخت</span>
+                        <span class="fs-4 fw-bold text-success">{{ cart.get_total_price|floatformat:0 }} <small class="fs-6">تومان</small></span>
                     </div>
                     
                     {% if cart|length > 0 %}
-                        <div class="d-grid gap-2 mt-4">
-                            <a href="{% url 'store:checkout' %}" class="btn btn-warning btn-lg fw-bold">ادامه فرآیند خرید</a>
-                             
-                            
-
-                            <a href="{% url 'store:product_list' %}" class="btn btn-outline-secondary">ادامه خرید</a>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'store:checkout' %}" class="btn btn-warning btn-lg fw-bold py-3 shadow-sm">
+                                ادامه فرآیند خرید <i class="bi bi-arrow-left ms-2"></i>
+                            </a>
+                            <a href="{% url 'store:product_list' %}" class="btn btn-outline-secondary">بازگشت به فروشگاه</a>
                         </div>
                     {% endif %}
 

@@ -9,21 +9,11 @@
         <!-- ستون سمت راست: گالری تصاویر -->
         <div class="col-lg-6">
             <div class="product-gallery">
-                <div class="main-image mb-3 border rounded p-2">
+                <div class="main-image mb-3 border rounded p-2 text-center bg-white shadow-sm">
                     {% if product.image %}
-                        <img class="img-fluid" src="{{ product.image.url }}" alt="{{ product.name }}">
+                        <img class="img-fluid rounded" src="{{ product.image.url }}" alt="{{ product.name }}" style="max-height: 500px; object-fit: contain;">
                     {% else %}
-                        <img class="img-fluid" src="{% static 'images/placeholder.png' %}" alt="No image">
-                    {% endif %}
-                </div>
-                <div class="thumbnail-images d-flex justify-content-start">
-                    <!-- {% if product.image %}
-                    <img src="{{ product.image.url }}" class="img-thumbnail me-2" style="width: 100px; height: 100px; cursor: pointer;">
-                    {% endif %} -->
-                    {% if product.image %}
-                        <img src="{{ product.image.url }}" class="img-thumbnail me-2" style="width: 100px; height: 100px; cursor: pointer;">
-                    {% else %}
-                        <img src="{% static 'images/placeholder.png' %}" class="img-thumbnail me-2" style="width: 100px; height: 100px; cursor: pointer;" alt="No image">
+                        <img class="img-fluid rounded" src="{% static 'images/placeholder.png' %}" alt="No image" style="max-height: 500px; object-fit: contain;">
                     {% endif %}
                 </div>
             </div>
@@ -35,38 +25,94 @@
                 <h1 class="display-5 fw-bolder mb-3">{{ product.name }}</h1>
                 
                 <div class="fs-5 mb-4">
-                    <span class="text-muted">برند:</span> <a href="#">برند محصول</a> | 
-                    <span class="text-muted">دسته‌بندی:</span> <a href="{% url 'store:product_list_by_category' product.category.slug %}">{{ product.category.name }}</a>
+                    <span class="text-muted">برند:</span> 
+                    <span class="fw-bold text-dark">{% if product.brand %}{{ product.brand.name }}{% else %}متفرقه{% endif %}</span> 
+                    <span class="mx-2">|</span>
+                    <span class="text-muted">دسته‌بندی:</span> 
+                    <a href="{% url 'store:product_list_by_category' product.category.slug %}" class="text-decoration-none fw-bold text-primary">{{ product.category.name }}</a>
                 </div>
                 
-                <div class="card p-3 mb-4 shadow-sm border-0">
+                <div class="card p-4 mb-4 shadow-sm border-0 bg-light rounded-3">
                     <div class="card-body">
                         <div class="price-section mb-3">
                             {% if product.old_price %}
-                                <span class="text-muted text-decoration-line-through fs-5">{{ product.old_price|floatformat:0 }} تومان</span>
+                                <span class="text-muted text-decoration-line-through fs-5 me-2">{{ product.old_price|floatformat:0 }}</span>
                             {% endif %}
                             <span class="h2 fw-bold text-success">{{ product.price|floatformat:0 }} تومان</span>
+                            <span class="text-muted small d-block mt-1">قیمت خرده‌فروشی</span>
                         </div>
 
-                        <div class="availability mb-4">
-                            <p class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> <strong>موجود در انبار</strong></p>
-                            <p><i class="bi bi-truck text-info"></i> ارسال فوری</p>
+                        <!-- === نمایش پیشنهاد قیمت عمده === -->
+                        {% if product.wholesale_min_qty > 0 and product.wholesale_price %}
+                        <div class="alert alert-primary d-flex align-items-center mb-4 border-0 shadow-sm" role="alert">
+                            <i class="bi bi-info-circle-fill fs-3 me-3 text-primary"></i>
+                            <div>
+                                <strong class="fs-6">پیشنهاد ویژه همکاران:</strong><br>
+                                در صورت خرید بیش از <span class="fw-bold badge bg-primary fs-6 mx-1">{{ product.wholesale_min_qty }}</span> عدد، قیمت هر واحد 
+                                <span class="fw-bold text-danger fs-5">{{ product.wholesale_price|floatformat:0 }} تومان</span> 
+                                محاسبه می‌شود.
+                            </div>
+                        </div>
+                        {% endif %}
+                        <!-- ========================================== -->
+
+                        <div class="availability mb-4 border-top pt-3">
+                            {% if product.stock > 0 %}
+                                <p class="mb-2 text-success d-flex align-items-center">
+                                    <i class="bi bi-check-circle-fill me-2 fs-5"></i> <strong>موجود در انبار</strong>
+                                </p>
+                                <p class="text-muted small mb-0"><i class="bi bi-truck me-1"></i> ارسال فوری به سراسر کشور</p>
+                            {% else %}
+                                <p class="text-danger d-flex align-items-center">
+                                    <i class="bi bi-x-circle-fill me-2 fs-5"></i> <strong>ناموجود</strong>
+                                </p>
+                            {% endif %}
                         </div>
 
+                        <!-- === فرم افزودن به سبد خرید با انتخاب تعداد === -->
                         <form action="{% url 'cart:cart_add' product.id %}" method="post">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold">افزودن به سبد خرید</button>
+                            <div class="row g-2 align-items-end">
+                                <!-- ورودی تعداد -->
+                                <div class="col-4 col-md-3">
+                                    <label class="form-label small text-muted mb-1 fw-bold">تعداد:</label>
+                                    <input type="number" 
+                                           name="quantity" 
+                                           class="form-control form-control-lg text-center fw-bold" 
+                                           value="1" 
+                                           min="1" 
+                                           max="{{ product.stock }}" 
+                                           {% if product.stock == 0 %}disabled{% endif %}
+                                           required>
+                                </div>
+                        
+                                <!-- دکمه افزودن -->
+                                <div class="col-8 col-md-9">
+                                    {% if product.stock > 0 %}
+                                    <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold shadow-sm h-100">
+                                        <i class="bi bi-cart-plus me-2"></i> افزودن به سبد خرید
+                                    </button>
+                                    {% else %}
+                                    <button type="button" class="btn btn-secondary btn-lg w-100 fw-bold h-100" disabled>
+                                        ناموجود
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </form>
+                        <!-- ================================================= -->
                     </div>
                 </div>
 
                 {% if product.attributes.all %}
                 <div class="product-features mt-4">
-                    <h5 class="fw-bold">ویژگی‌های اصلی:</h5>
+                    <h5 class="fw-bold border-bottom pb-2 mb-3">ویژگی‌های اصلی</h5>
                     <ul class="list-unstyled">
                         {% for attr in product.attributes.all|slice:":5" %}
-                        <li class="mb-2">
-                            <i class="bi bi-dot"></i> <strong>{{ attr.attribute.name }}:</strong> {{ attr.value }}
+                        <li class="mb-2 d-flex align-items-center text-muted">
+                            <i class="bi bi-dot fs-3 text-primary lh-1"></i>
+                            <strong class="text-dark ms-1">{{ attr.attribute.name }}:</strong> 
+                            <span class="ms-2">{{ attr.value }}</span>
                         </li>
                         {% endfor %}
                     </ul>
@@ -79,56 +125,81 @@
     <!-- ==================== ردیف توضیحات و مشخصات ==================== -->
     <div class="row mt-5">
         <div class="col-12">
-            <ul class="nav nav-tabs fs-5" id="productTab" role="tablist">
+            <ul class="nav nav-tabs fs-5 border-bottom-0" id="productTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description">توضیحات</button>
+                    <button class="nav-link active fw-bold px-4" id="description-tab" data-bs-toggle="tab" data-bs-target="#description">توضیحات</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="specifications-tab-btn" data-bs-toggle="tab" data-bs-target="#specifications">مشخصات فنی</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews">نظرات کاربران</button>
+                    <button class="nav-link fw-bold px-4" id="specifications-tab-btn" data-bs-toggle="tab" data-bs-target="#specifications">مشخصات فنی</button>
                 </li>
             </ul>
 
-            <div class="tab-content p-4 border border-top-0 rounded-bottom fs-5" id="productTabContent">
+            <div class="tab-content p-4 border rounded-3 rounded-top-0 fs-6 bg-white shadow-sm" id="productTabContent">
                 <div class="tab-pane fade show active" id="description" role="tabpanel">
-                    <p>{{ product.description|linebreaks }}</p>
+                    <p class="lh-lg text-secondary mb-0" style="text-align: justify;">{{ product.description|linebreaks }}</p>
                 </div>
 
                 <div class="tab-pane fade" id="specifications" role="tabpanel">
                     {% if product.attributes.all %}
-                        <table class="table table-striped table-hover">
-                            <tbody>
-                                {% for attr in product.attributes.all %}
-                                <tr>
-                                    <td style="width: 30%;" class="fw-bold">{{ attr.attribute.name }}</td>
-                                    <td>{{ attr.value }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover align-middle mb-0">
+                                <tbody>
+                                    {% for attr in product.attributes.all %}
+                                    <tr>
+                                        <td class="fw-bold text-muted bg-light" style="width: 25%;">{{ attr.attribute.name }}</td>
+                                        <td>{{ attr.value }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     {% else %}
-                        <p>ویژگی برای این محصول ثبت نشده است.</p>
+                        <div class="alert alert-light text-center text-muted mb-0">
+                            <i class="bi bi-exclamation-circle me-2"></i> ویژگی فنی برای این محصول ثبت نشده است.
+                        </div>
                     {% endif %}
-                </div>
-
-                <div class="tab-pane fade" id="reviews" role="tabpanel">
-                    <p>در حال حاضر نظری برای این محصول ثبت نشده است.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ==================== بخش محصولات مرتبط (این بخش اضافه شده) ==================== -->
+    <!-- ==================== محصولات مرتبط ==================== -->
     {% if related_products %}
-    <div class="row mt-5">
+    <div class="row mt-5 pt-4">
         <div class="col-12">
-            <h2 class="pb-2 border-bottom">محصولات مرتبط</h2>
-            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4 py-5">
+            <div class="d-flex align-items-center border-bottom pb-3 mb-4">
+                <h3 class="fw-bold m-0">محصولات مرتبط</h3>
+                <a href="{% url 'store:product_list_by_category' product.category.slug %}" class="ms-auto text-decoration-none small fw-bold">مشاهده همه</a>
+            </div>
+            
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4">
                 {% for p in related_products %}
                     <div class="col">
-                        {% include 'store/product/product_card.html' with product=p %}
+                        <div class="card h-100 shadow-sm border-0 product-card-hover transition-all">
+                            <div class="position-relative">
+                                <a href="{{ p.get_absolute_url }}" class="d-block text-center p-3 bg-white rounded-top">
+                                    {% if p.image %}
+                                    <img src="{{ p.image.url }}" class="card-img-top img-fluid" alt="{{ p.name }}" style="height: 180px; object-fit: contain;">
+                                    {% else %}
+                                    <img src="{% static 'images/placeholder.png' %}" class="card-img-top img-fluid" style="height: 180px; object-fit: contain;">
+                                    {% endif %}
+                                </a>
+                                {% if p.old_price %}
+                                <span class="position-absolute top-0 end-0 badge bg-danger m-2 rounded-pill">تخفیف</span>
+                                {% endif %}
+                            </div>
+                            <div class="card-body d-flex flex-column border-top">
+                                <h5 class="card-title fs-6 mb-3 flex-grow-1 lh-base">
+                                    <a href="{{ p.get_absolute_url }}" class="text-decoration-none text-dark stretched-link">{{ p.name }}</a>
+                                </h5>
+                                <div class="d-flex justify-content-between align-items-center mt-auto">
+                                    <div class="text-success fw-bold">{{ p.price|floatformat:0 }} <small>تومان</small></div>
+                                    {% if p.old_price %}
+                                    <div class="text-muted text-decoration-line-through small">{{ p.old_price|floatformat:0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 {% endfor %}
             </div>
@@ -137,4 +208,15 @@
     {% endif %}
 
 </div>
+
+<!-- استایل داخلی برای افکت‌های جزئی -->
+<style>
+    .product-card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+</style>
 {% endblock %}
