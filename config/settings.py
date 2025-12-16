@@ -22,6 +22,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY')
+BALE_BOT_TOKEN = config('BALE_BOT_TOKEN')
+BALE_ADMIN_CHAT_ID = config('BALE_ADMIN_CHAT_ID')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)

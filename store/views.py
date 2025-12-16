@@ -461,6 +461,7 @@ from .utils_shipping import calculate_shipping_cost
 import logging
 import secrets
 from .forms import UsernameRecoveryForm, SecurityAnswerForm, PasswordResetForm
+from .telegram_utils import send_bale_order_notification
 
 logger = logging.getLogger(__name__)
 
@@ -902,6 +903,11 @@ def payment_verify(request):
                     product.save()
 
             order.save()
+
+            try:
+                send_bale_order_notification(order)
+            except Exception as e:
+                logger.error(f"Failed to send telegram notification: {e}")
             
             # پاک‌سازی
             request.cart.clear()
