@@ -76,14 +76,30 @@
                                 <!-- ورودی تعداد -->
                                 <div class="col-4 col-md-3">
                                     <label class="form-label small text-muted mb-1 fw-bold">تعداد:</label>
-                                    <input type="number" 
+                                    <!-- <input type="number" 
                                            name="quantity" 
                                            class="form-control form-control-lg text-center fw-bold" 
                                            value="1" 
                                            min="1" 
                                            max="{{ product.stock }}" 
                                            {% if product.stock == 0 %}disabled{% endif %}
-                                           required>
+                                           required> -->
+                                           <input type="number" 
+                                                name="quantity" 
+                                                class="form-control form-control-lg text-center fw-bold" 
+                                                
+                                                value="{{ product.min_order_quantity }}" 
+                                                min="{{ product.min_order_quantity }}" 
+                                                
+                                                {% if product.max_order_quantity %}
+                                                    max="{{ product.max_order_quantity }}"
+                                                {% else %}
+                                                    max="{{ product.stock }}"
+                                                {% endif %}
+                                                
+                                                {% if product.stock == 0 %}disabled{% endif %}
+                                                required>
+
                                 </div>
                         
                                 <!-- دکمه افزودن -->

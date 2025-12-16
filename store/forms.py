@@ -16,6 +16,23 @@ class CustomUserCreationForm(UserCreationForm):
             'style': 'direction: ltr; text-align: left;' # شماره موبایل چپ‌چین باشد بهتر است
         })
     )
+    security_question = forms.CharField(
+        label="سوال امنیتی (خودتان طرح کنید)",
+        max_length=255,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'مثلاً: نام اولین مدرسه من؟ یا رنگ مورد علاقه؟'
+        })
+    )
+    
+    security_answer = forms.CharField(
+        label="پاسخ سوال امنیتی",
+        max_length=255,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'پاسخ را وارد کنید (این پاسخ محرمانه می‌ماند)'
+        })
+    )
 
     class Meta(UserCreationForm.Meta):
         model = User
@@ -80,3 +97,33 @@ class ShippingForm(forms.ModelForm):
             'state': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'استان'}),
             'zipcode': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'کد پستی'}),
         }
+
+
+class UsernameRecoveryForm(forms.Form):
+    identifier = forms.CharField(
+        label="نام کاربری یا شماره موبایل",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'نام کاربری یا 0912...'})
+    )
+
+class SecurityAnswerForm(forms.Form):
+    answer = forms.CharField(
+        label="پاسخ شما",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'پاسخ سوال امنیتی خود را بنویسید'})
+    )
+
+class PasswordResetForm(forms.Form):
+    new_password = forms.CharField(
+        label="رمز عبور جدید",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    confirm_password = forms.CharField(
+        label="تکرار رمز عبور جدید",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        p1 = cleaned_data.get("new_password")
+        p2 = cleaned_data.get("confirm_password")
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError("رمز عبور و تکرار آن مطابقت ندارند.")

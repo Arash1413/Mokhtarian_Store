@@ -44,7 +44,8 @@
                                            name="quantity" 
                                            class="form-control form-control-sm text-center quantity-input" 
                                            value="{{ item.quantity }}" 
-                                           min="1" 
+                                           min="{{ product.min_order_quantity }}"
+                                           {% if product.max_order_quantity %}max="{{ product.max_order_quantity }}"{% endif %} 
                                            data-product-id="{{ product.id }}"
                                            data-url="{% url 'cart:cart_add' product.id %}">
                                 </form>
@@ -194,6 +195,19 @@
                         } else {
                             badgeContainer.innerHTML = '';
                         }
+                    } else {
+                        alert(data.error); // یا استفاده از Toast
+    
+    // برگرداندن عدد به مقدار مجاز (اگر سرور فرستاده باشد)
+    if (data.corrected_quantity) {
+        // چون اینپوت در متغیر input که در بالای اسکریپت تعریف شده (this) در دسترس است
+        // اما چون داخل تابع arrow هستیم یا function معمولی، دسترسی متفاوت است.
+        // بهتر است input که ایونت روی آن فایر شده را داشته باشیم.
+        // در کد شما input همان متغیر input در حلقه forEach است.
+        input.value = data.corrected_quantity;
+    }
+                        
+
                     }
                 })
                 .catch(error => console.error('Error:', error))

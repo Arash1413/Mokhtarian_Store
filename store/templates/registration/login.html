@@ -104,6 +104,12 @@
                                 </label>
                                 <input type="password" name="password" id="{{ form.password.id_for_label }}" 
                                        class="form-control" placeholder="رمز عبور..." required>
+
+                                <div class="text-end mt-2">
+        <a href="{% url 'store:forgot_password' %}" class="text-decoration-none small text-muted">
+            رمز عبور خود را فراموش کرده‌اید؟
+        </a>
+    </div>
                             </div>
                             
                             <div class="d-grid mt-5">

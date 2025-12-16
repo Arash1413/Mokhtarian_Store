@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.urls import reverse
 from simple_history.models import HistoricalRecords
+from django.contrib.auth.hashers import make_password
 
 
 
@@ -43,6 +44,8 @@ class Product(models.Model):
     old_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) # <-- فیلد جدید
     is_bestseller = models.BooleanField(default=False) # <-- فیلد جدید
     weight = models.PositiveIntegerField(default=0, help_text="وزن محصول به گرم")
+    min_order_quantity = models.PositiveIntegerField(default=1, verbose_name="حداقل تعداد سفارش")
+    max_order_quantity = models.PositiveIntegerField(null=True, blank=True, verbose_name="حداکثر تعداد سفارش (خالی = نامحدود)")
 
     class Meta:
         ordering = ('-created',)
@@ -75,6 +78,8 @@ class Product(models.Model):
 #         return self.user.get_full_name() or self.user.username
 
 class Customer(models.Model):
+    security_question = models.CharField(max_length=255, blank=True, null=True, help_text="سوال امنیتی که کاربر طرح کرده است")
+    security_answer = models.CharField(max_length=255, blank=True, null=True, help_text="پاسخ هش شده سوال امنیتی")
     # --- تغییرات کلیدی ---
     # 1. OneToOneField را به ForeignKey تغییر دهید.
     # 2. null=True و blank=True را اضافه کنید.
@@ -84,6 +89,22 @@ class Customer(models.Model):
     name = models.CharField(max_length=200, null=True)
     email = models.CharField(max_length=200, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True, unique=True) # اضافه کردن unique=True
+
+    def set_security_answer(self, raw_answer):
+        from django.contrib.auth.hashers import make_password
+        """پاسخ را نرمال‌سازی و هش می‌کند"""
+        if raw_answer:
+            # حذف فاصله‌های اضافی و تبدیل به حروف کوچک برای جلوگیری از اشتباه تایپی
+            clean_answer = raw_answer.strip().lower()
+            self.security_answer = make_password(clean_answer)
+    
+    def check_security_answer(self, raw_answer):
+        """بررسی صحت پاسخ وارد شده"""
+        from django.contrib.auth.hashers import check_password
+        if raw_answer:
+            clean_answer = raw_answer.strip().lower()
+            return check_password(clean_answer, self.security_answer)
+        return False
 
     def __str__(self):
         # اصلاح تابع __str__ برای مدیریت کاربرانی که user ندارند

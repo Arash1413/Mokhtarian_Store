@@ -1,0 +1,30 @@
+{% extends "store/base.html" %}
+{% block content %}
+<div class="container my-5" style="max-width: 500px;">
+    <div class="card shadow border-info">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">احراز هویت امنیتی</h5>
+        </div>
+        <div class="card-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-danger">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="alert alert-light border mb-4">
+                <strong>سوال امنیتی شما:</strong><br>
+                <span class="fs-5 text-primary">{{ question }}</span>
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ form.as_p }}
+                </div>
+                <button type="submit" class="btn btn-success w-100">بررسی پاسخ</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -460,6 +460,7 @@ from django.contrib.auth import login
 from .utils_shipping import calculate_shipping_cost
 import logging
 import secrets
+from .forms import UsernameRecoveryForm, SecurityAnswerForm, PasswordResetForm
 
 logger = logging.getLogger(__name__)
 
@@ -518,18 +519,29 @@ def register(request):
         if form.is_valid():
             user = form.save()
             phone = form.cleaned_data.get('phone_number')
+            question = form.cleaned_data.get('security_question')
+            raw_answer = form.cleaned_data.get('security_answer')
+
             customer, created = Customer.objects.get_or_create(
                 user=user,
                 defaults={
                     'name': user.username,
-                    'phone_number': phone
+                    'phone_number': phone,
+                    'security_question': question
                 }
             )
-            if not created:
-                customer.phone_number = phone
+
+            if raw_answer:
+                customer.set_security_answer(raw_answer)
                 customer.save()
 
-            login(request, user)
+            if not created:
+                customer.phone_number = phone
+                customer.security_question = question
+                customer.set_security_answer(raw_answer)
+                customer.save()
+
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             return redirect('/')
     else:
         form = CustomUserCreationForm()
@@ -943,3 +955,85 @@ def order_detail(request, order_id):
         'shipping_address': order.shippingaddress_set.first(),
     }
     return render(request, 'store/order_detail.html', context)
+
+def forgot_password_request(request):
+    """مرحله ۱: دریافت نام کاربری برای پیدا کردن سوال"""
+    if request.method == 'POST':
+        form = UsernameRecoveryForm(request.POST)
+        if form.is_valid():
+            identifier = form.cleaned_data['identifier']
+            # جستجو بر اساس نام کاربری یا موبایل
+            customer = Customer.objects.filter(
+                Q(user__username=identifier) | Q(phone_number=identifier)
+            ).first()
+
+            if customer and customer.security_question and customer.security_answer:
+                # ذخیره ID مشتری در سشن برای مرحله بعد
+                request.session['reset_customer_id'] = customer.id
+                return redirect('store:verify_security_question')
+            else:
+                messages.error(request, "کاربری با این مشخصات یافت نشد یا سوال امنیتی تنظیم نکرده است.")
+    else:
+        form = UsernameRecoveryForm()
+    
+    return render(request, 'registration/forgot_password.html', {'form': form})
+
+def verify_security_question(request):
+    """مرحله ۲: نمایش سوال و بررسی پاسخ"""
+    customer_id = request.session.get('reset_customer_id')
+    if not customer_id:
+        return redirect('store:forgot_password')
+    
+    customer = get_object_or_404(Customer, id=customer_id)
+
+    if request.method == 'POST':
+        form = SecurityAnswerForm(request.POST)
+        if form.is_valid():
+            answer = form.cleaned_data['answer']
+            if customer.check_security_answer(answer):
+                # پاسخ صحیح است، اجازه ورود به مرحله تغییر رمز
+                request.session['security_verified'] = True
+                return redirect('store:reset_password_confirm')
+            else:
+                messages.error(request, "پاسخ اشتباه است.")
+    else:
+        form = SecurityAnswerForm()
+
+    return render(request, 'registration/security_question.html', {
+        'form': form,
+        'question': customer.security_question
+    })
+
+def reset_password_confirm(request):
+    """مرحله ۳: تغییر رمز عبور"""
+    customer_id = request.session.get('reset_customer_id')
+    is_verified = request.session.get('security_verified')
+
+    if not customer_id or not is_verified:
+        return redirect('store:forgot_password')
+    
+    customer = get_object_or_404(Customer, id=customer_id)
+
+    if request.method == 'POST':
+        form = PasswordResetForm(request.POST)
+        if form.is_valid():
+            new_pass = form.cleaned_data['new_password']
+            user = customer.user
+            if user:
+                user.set_password(new_pass)
+                user.save()
+                
+                # پاک کردن سشن‌های موقت
+                del request.session['reset_customer_id']
+                del request.session['security_verified']
+                
+                messages.success(request, "رمز عبور با موفقیت تغییر کرد. اکنون وارد شوید.")
+                return redirect('login')
+            else:
+                messages.error(request, "خطایی در کاربر متصل رخ داده است.")
+    else:
+        form = PasswordResetForm()
+
+    return render(request, 'registration/reset_password.html', {'form': form})
+
+

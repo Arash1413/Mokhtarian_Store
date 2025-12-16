@@ -25,10 +25,18 @@ urlpatterns = [
 
     # آدرس‌های مربوط به پرداخت
     path('payment/verify/', views.payment_verify, name='payment_verify'),
+
+    path('forgot-password/', views.forgot_password_request, name='forgot_password'),
+    path('forgot-password/verify/', views.verify_security_question, name='verify_security_question'),
+    path('forgot-password/reset/', views.reset_password_confirm, name='reset_password_confirm'),
     
     # آدرس‌های داینامیک در انتها
     path('category/<slug:category_slug>/', views.product_list, name='product_list_by_category'),
     
     # الگوی کلی slug باید آخرین الگو باشد
     path('<slug:slug>/', views.product_detail, name='product_detail'),
+
+    
+
+
 ]

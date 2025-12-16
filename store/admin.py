@@ -104,6 +104,10 @@ class ProductAdmin(admin.ModelAdmin):
         ('قیمت‌گذاری و موجودی', {
            'fields': ('price', 'old_price', 'wholesale_price', 'wholesale_min_qty', 'stock', 'weight', 'available')
         }),
+        ('محدودیت‌های سفارش', {
+            'fields': ('min_order_quantity', 'max_order_quantity'),
+            'classes': ('collapse',)
+        }),
         ('تنظیمات فروش', {
             'fields': ('is_bestseller',),
             'classes': ('collapse',)
