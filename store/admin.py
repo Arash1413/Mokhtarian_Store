@@ -56,6 +56,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.db.models import Sum
 from .models import Category, Product, Customer, Order, OrderItem, Attribute, ProductAttribute, ShippingAddress, Brand
+from .models import FAQ
 
 # تنظیمات هدر پنل ادمین
 admin.site.site_header = "مدیریت فروشگاه ملو"
@@ -75,7 +76,7 @@ class CategoryAdmin(admin.ModelAdmin):
 class ProductAttributeInline(admin.TabularInline):
     model = ProductAttribute
     extra = 1
-    classes = ['collapse'] # قابلیت جمع شدن برای شلوغ نشدن صفحه
+    # classes = ['collapse'] # قابلیت جمع شدن برای شلوغ نشدن صفحه
 
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
@@ -266,3 +267,11 @@ class OrderAdmin(admin.ModelAdmin):
 class AttributeAdmin(admin.ModelAdmin):
     list_display = ['name']
     search_fields = ['name']
+
+
+
+@admin.register(FAQ)
+class FAQAdmin(admin.ModelAdmin):
+    list_display = ['question', 'sort_order', 'is_active']
+    list_editable = ['sort_order', 'is_active']
+    search_fields = ['question', 'answer']

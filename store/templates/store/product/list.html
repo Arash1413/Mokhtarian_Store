@@ -3,21 +3,17 @@
 
 {% block content %}
 
-<!-- بنر تزئینی (آدرس تصویر را حتما عوض کنید) -->
-<div class="container my-5">
-    <div class="p-5 text-center bg-body-tertiary rounded-3" style="background: url('{% static 'images/banner.jpg' %}') no-repeat center center; background-size: cover; min-height: 300px;">
-        <!-- مقدار آلفا (شفافیت) را افزایش دهید -->
-        <div class="d-flex justify-content-center align-items-center h-100" style="background-color: rgba(0, 0, 0, 0.8); border-radius: .5rem;">
-            <div>
-                <h1 class="text-white">جدیدترین محصولات</h1>
-                <p class="col-lg-8 mx-auto fs-5 text-white">
-                    کیفیت  را با ما تجربه کنید.
-                </p>
-            </div>
-        </div>
-    </div>
+<!-- 👇 بنر را اینجا، کاملاً مستقل و بیرون از هر کانتینر دیگری قرار دهید 👇 -->
+<div class="container-fluid p-0 mb-5">
+    <img src="{% static 'images/banner.png' %}" 
+         alt="Banner" 
+         class="w-100 d-block" 
+         style="height: auto; max-height: 600px; object-fit: cover;">
 </div>
+<!-- 👆 پایان بخش بنر 👆 -->
 
+
+<!-- 👇 بقیه محتوای سایت (محصولات) داخل کانتینر محدود شده باقی می‌مانند 👇 -->
 <div class="container px-4 py-5" id="custom-cards">
 
     <!-- بخش پرفروش‌ترین‌ها -->
@@ -44,7 +40,7 @@
     </div>
     {% endif %}
 
-    <!-- بخش همه محصولات با صفحه‌بندی -->
+    <!-- بخش همه محصولات -->
     {% if category %}
         <h2 class="pb-2 border-bottom">محصولات دسته‌بندی: {{ category.name }}</h2>
     {% else %}

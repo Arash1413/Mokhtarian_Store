@@ -205,7 +205,21 @@ class ProductAttribute(models.Model):
     
 
 
+# store/models.py
 
+class FAQ(models.Model):
+    question = models.CharField(max_length=255, verbose_name="سوال")
+    answer = models.TextField(verbose_name="پاسخ")
+    sort_order = models.IntegerField(default=0, verbose_name="ترتیب نمایش")
+    is_active = models.BooleanField(default=True, verbose_name="فعال")
+
+    class Meta:
+        ordering = ['sort_order']
+        verbose_name = "سوال متداول"
+        verbose_name_plural = "سوالات متداول"
+
+    def __str__(self):
+        return self.question
     
 
 
