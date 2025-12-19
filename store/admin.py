@@ -55,7 +55,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.db.models import Sum
-from .models import Category, Product, Customer, Order, OrderItem, Attribute, ProductAttribute, ShippingAddress, Brand, Coupon
+from .models import Category, Product, Customer, Order, OrderItem, Attribute, ProductAttribute, ShippingAddress, Brand, Coupon, Review
 from .models import FAQ
 
 # تنظیمات هدر پنل ادمین
@@ -297,3 +297,10 @@ class CouponAdmin(admin.ModelAdmin):
             'fields': ('valid_from', 'valid_to'),
         }),
     )
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ['subject', 'rating', 'user', 'product', 'status']
+    list_editable = ['status'] # برای تایید سریع در لیست
+    list_filter = ['status', 'created_at']
+    readonly_fields = ['user', 'product', 'rating', 'subject', 'comment'] # تا ادمین نتواند نظر کاربر را تغییر دهد (اختیاری)

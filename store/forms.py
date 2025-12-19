@@ -5,6 +5,9 @@ from django.contrib.auth.models import User
 from django import forms
 from .models import ShippingAddress
 from .models import ShippingAddress, Customer
+from .models import Review
+
+
 
 class CustomUserCreationForm(UserCreationForm):
     phone_number = forms.CharField(
@@ -127,3 +130,13 @@ class PasswordResetForm(forms.Form):
         p2 = cleaned_data.get("confirm_password")
         if p1 and p2 and p1 != p2:
             raise forms.ValidationError("رمز عبور و تکرار آن مطابقت ندارند.")
+        
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = Review
+        fields = ['subject', 'comment', 'rating']
+        widgets = {
+            'subject': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'عنوان نظر'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'متن نظر خود را بنویسید...'}),
+            'rating': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 5}),
+        }

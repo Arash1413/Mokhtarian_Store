@@ -30,6 +30,8 @@ urlpatterns = [
     path('forgot-password/', views.forgot_password_request, name='forgot_password'),
     path('forgot-password/verify/', views.verify_security_question, name='verify_security_question'),
     path('forgot-password/reset/', views.reset_password_confirm, name='reset_password_confirm'),
+
+    path('submit_review/<int:product_id>/', views.submit_review, name='submit_review'),
     
     # آدرس‌های داینامیک در انتها
     path('category/<slug:category_slug>/', views.product_list, name='product_list_by_category'),

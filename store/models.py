@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from simple_history.models import HistoricalRecords
 from django.contrib.auth.hashers import make_password
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 
@@ -238,6 +239,26 @@ class Coupon(models.Model):
 
     def __str__(self):
         return self.code
+    
+
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews', verbose_name="محصول")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="کاربر")
+    subject = models.CharField(max_length=100, blank=True, verbose_name="عنوان")
+    comment = models.TextField(max_length=500, verbose_name="متن نظر")
+    rating = models.IntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(5)], verbose_name="امتیاز")
+    status = models.BooleanField(default=False, verbose_name="وضعیت تایید") # فقط با تایید مدیر نمایش داده شود
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.subject} - {self.user.username}"
+
+    class Meta:
+        verbose_name = "نظر"
+        verbose_name_plural = "نظرات"
+        ordering = ['-created_at']
     
 
 

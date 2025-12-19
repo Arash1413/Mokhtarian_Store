@@ -21,10 +21,11 @@ from django.contrib.auth import login
 from .utils_shipping import calculate_shipping_cost
 import logging
 import secrets
-from .forms import UsernameRecoveryForm, SecurityAnswerForm, PasswordResetForm
+from .forms import UsernameRecoveryForm, SecurityAnswerForm, PasswordResetForm, ReviewForm
 from .telegram_utils import send_bale_order_notification
 from django.utils import timezone
-from .models import Coupon
+from .models import Coupon, Review
+from django.db.models import Avg # برای محاسبه میانگین امتیاز
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,20 @@ def product_list(request, category_slug=None):
 def product_detail(request, slug):
     product = get_object_or_404(Product, slug=slug, available=True)
     related_products = Product.objects.filter(category=product.category, available=True).exclude(slug=slug).order_by('?')[:4]
-    context = {'product': product, 'related_products': related_products}
+    
+    # دریافت نظرات تایید شده
+    reviews = Review.objects.filter(product=product, status=True)
+    
+    # محاسبه میانگین امتیاز
+    average_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+
+    context = {
+        'product': product, 
+        'related_products': related_products,
+        'reviews': reviews,
+        'average_rating': average_rating,
+        'review_form': ReviewForm() # فرم خالی برای ارسال به قالب
+    }
     return render(request, 'store/product/detail.html', context)
 
 def search(request):
@@ -627,5 +641,44 @@ def coupon_apply(request):
         messages.error(request, 'کد تخفیف معتبر نیست.')
     
     return redirect('cart:cart_detail')
+
+
+
+def submit_review(request, product_id):
+    if request.method == 'POST':
+        try:
+            # بررسی لاگین بودن کاربر
+            if not request.user.is_authenticated:
+                messages.error(request, "برای ثبت نظر ابتدا باید وارد حساب کاربری خود شوید.")
+                return redirect('login')
+
+            product = get_object_or_404(Product, id=product_id)
+            
+            # بررسی اینکه آیا کاربر قبلا نظر داده یا نه (اختیاری)
+            # اگر می‌خواهید هر کاربر فقط یک نظر بدهد، کامنت زیر را فعال کنید:
+            # if Review.objects.filter(user=request.user, product=product).exists():
+            # messages.warning(request, "شما قبلاً برای این محصول نظر ثبت کرده‌اید.")
+            #     return redirect(product.get_absolute_url())
+
+            form = ReviewForm(request.POST)
+            if form.is_valid():
+                data = form.save(commit=False)
+                data.subject = form.cleaned_data['subject']
+                data.rating = form.cleaned_data['rating']
+                data.comment = form.cleaned_data['comment']
+                data.product = product
+                data.user = request.user
+                data.save()
+                messages.success(request, "نظر شما با موفقیت ثبت شد و پس از تایید مدیریت نمایش داده می‌شود.")
+                return redirect(product.get_absolute_url())
+            else:
+                messages.error(request, "اطلاعات فرم صحیح نیست.")
+                return redirect(product.get_absolute_url())
+                
+        except Exception as e:
+            messages.error(request, f"خطا در ثبت نظر: {e}")
+            return redirect('store:product_list')
+            
+    return redirect('store:product_list')
 
 

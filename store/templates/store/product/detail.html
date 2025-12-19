@@ -178,6 +178,112 @@
             </div>
         </div>
     </div>
+    <!-- ==================== بخش نظرات و امتیازدهی ==================== -->
+<div class="row mt-5">
+    <div class="col-md-6">
+    <h4 class="fw-bold mb-4">نظرات کاربران ({{ reviews.count }})</h4>
+    
+    <!-- 👇👇👇 شروع تغییرات: شرط بررسی وجود نظر 👇👇👇 -->
+    {% if reviews %}
+        <!-- حالت اول: اگر نظری وجود دارد، امتیاز و ستاره‌ها را نشان بده -->
+        <div class="mb-4">
+            <span class="fs-3 fw-bold text-warning">{{ average_rating|floatformat:1 }}</span>
+            <span class="text-muted">از 5</span>
+            <div class="text-warning">
+                <!-- نمایش ستاره‌ها -->
+                {% with ''|center:5 as range %}
+                {% for _ in range %}
+                    <i class="bi bi-star{% if forloop.counter <= average_rating|add:0.5 %}-fill{% endif %}"></i>
+                {% endfor %}
+                {% endwith %}
+            </div>
+        </div>
+    {% else %}
+        <!-- حالت دوم: اگر نظری نیست، بجای 0.0 این پیام را نشان بده -->
+        <div class="mb-4 d-flex align-items-center">
+            <span class="badge bg-secondary bg-opacity-25 text-dark border me-2 px-3 py-2 rounded-pill">جدید</span>
+            <span class="text-muted small">هنوز امتیازی برای این محصول ثبت نشده است.</span>
+        </div>
+    {% endif %}
+    <!-- 👆👆👆 پایان تغییرات 👆👆👆 -->
+
+    <!-- لیست نظرات -->
+    <div class="review-list" style="max-height: 400px; overflow-y: auto;">
+        {% for review in reviews %}
+        <div class="card mb-3 border-0 shadow-sm bg-light">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold m-0">{{ review.user.get_full_name|default:review.user.username }}</h6>
+                    <small class="text-muted">{{ review.created_at|date:"Y/m/d" }}</small>
+                </div>
+                <div class="text-warning mb-2 small">
+                    {% with ''|center:5 as range %}
+                    {% for _ in range %}
+                        <i class="bi bi-star{% if forloop.counter <= review.rating %}-fill{% endif %}"></i>
+                    {% endfor %}
+                    {% endwith %}
+                </div>
+                <h6 class="text-dark fw-bold">{{ review.subject }}</h6>
+                <p class="card-text text-secondary small">{{ review.comment }}</p>
+            </div>
+        </div>
+        {% empty %}
+            <div class="alert alert-light border text-center text-muted">
+                <i class="bi bi-chat-text fs-4 d-block mb-2"></i>
+                اولین نفری باشید که نظر می‌دهد!
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+    <!-- فرم ارسال نظر -->
+    <div class="col-md-6">
+        <h4 class="fw-bold mb-4">دیدگاه خود را بنویسید</h4>
+        
+        {% if user.is_authenticated %}
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form action="{% url 'store:submit_review' product.id %}" method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">امتیاز شما</label>
+                            <div class="rating-css">
+                                <div class="star-icon">
+                                    <input type="radio" name="rating" value="1" checked> 1
+                                    <input type="radio" name="rating" value="2"> 2
+                                    <input type="radio" name="rating" value="3"> 3
+                                    <input type="radio" name="rating" value="4"> 4
+                                    <input type="radio" name="rating" value="5"> 5
+                                    <span class="text-muted ms-2"><i class="bi bi-star-fill text-warning"></i></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">عنوان</label>
+                            <input type="text" name="subject" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">متن نظر</label>
+                            <textarea name="comment" class="form-control" rows="4" required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">ارسال نظر</button>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning text-center py-5">
+                <i class="bi bi-lock-fill display-4 mb-3 d-block"></i>
+                <h5>برای ثبت نظر باید وارد حساب کاربری خود شوید.</h5>
+                <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-dark mt-3 px-4">ورود / ثبت‌نام</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+<hr class="my-5">
 
     <!-- ==================== محصولات مرتبط ==================== -->
     {% if related_products %}
