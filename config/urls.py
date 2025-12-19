@@ -18,9 +18,18 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings             # import کنید
 from django.conf.urls.static import static # import کنید
+from django.views.generic.base import TemplateView # برای robots.txt
+from django.contrib.sitemaps.views import sitemap
+from store.sitemaps import ProductSitemap, CategorySitemap, StaticViewSitemap
 
 from django.contrib.auth import views as auth_views
 from store import views as store_views
+
+sitemaps = {
+    'products': ProductSitemap,
+    'categories': CategorySitemap,
+    'static': StaticViewSitemap,
+}
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,6 +39,14 @@ urlpatterns = [
 
     path('cart/', include('cart.urls', namespace='cart')),
     path('', include('store.urls', namespace='store')),
+
+    path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
+
+    # آدرس Robots.txt (به موتورهای جستجو می‌گوید کجا را ایندکس کنند)
+    path(
+        "robots.txt",
+        TemplateView.as_view(template_name="store/robots.txt", content_type="text/plain"),
+    ),
 ]
 
 if settings.DEBUG:

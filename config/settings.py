@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',    # این خط باید باشد
+    'django.contrib.sitemaps', # این خط را اضافه کنید
     
 
     'store',
@@ -50,6 +52,8 @@ INSTALLED_APPS = [
     'simple_history',
 
 ]
+
+SITE_ID = 1
 
 
 

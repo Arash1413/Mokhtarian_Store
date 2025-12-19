@@ -13,6 +13,9 @@ class Category(models.Model):
     name = models.CharField(max_length=200, db_index=True)
     slug = models.SlugField(max_length=200, unique=True)
 
+    seo_title = models.CharField(max_length=200, blank=True, verbose_name="عنوان سئو (Title)")
+    seo_description = models.TextField(blank=True, verbose_name="توضیحات سئو (Meta Description)")
+
     # رفتار مدل
     class Meta:
         ordering = ('name',)
@@ -47,6 +50,9 @@ class Product(models.Model):
     weight = models.PositiveIntegerField(default=0, help_text="وزن محصول به گرم")
     min_order_quantity = models.PositiveIntegerField(default=1, verbose_name="حداقل تعداد سفارش")
     max_order_quantity = models.PositiveIntegerField(null=True, blank=True, verbose_name="حداکثر تعداد سفارش (خالی = نامحدود)")
+
+    seo_title = models.CharField(max_length=200, blank=True, verbose_name="عنوان سئو (Title)")
+    seo_description = models.TextField(blank=True, verbose_name="توضیحات سئو (Meta Description)")
 
     class Meta:
         ordering = ('-created',)
