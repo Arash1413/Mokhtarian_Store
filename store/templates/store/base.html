@@ -202,28 +202,35 @@
                     </button>
                     
                     <!-- بخش چپ: منوی اصلی و جستجو -->
-                    <div class="collapse navbar-collapse" id="main-nav">
-                        <ul class="navbar-nav ms-auto">
-                            <li class="nav-item"><a href="{% url 'store:product_list' %}" class="nav-link">خانه</a></li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="categoriesDropdown" role="button" data-bs-toggle="dropdown">دسته‌بندی محصولات</a>
-                                <ul class="dropdown-menu">
-                                    {% for c in categories %}
-                                        <li><a class="dropdown-item" href="{% url 'store:product_list_by_category' c.slug %}">{{ c.name }}</a></li>
-                                    {% endfor %}
-                                </ul>
-                            </li>
-                            <li class="nav-item"><a href="{% url 'store:about_page' %}" class="nav-link">درباره ما</a></li>
-                        </ul>
-                        <form action="{% url 'store:search' %}" method="get" class="search-form d-flex align-items-center">
-                            <div class="input-group search-box shadow-sm rounded-pill bg-white overflow-hidden border">
-                                <button class="btn btn-link text-muted border-0 ps-3" type="submit">
-                                    <i class="bi bi-search fs-5"></i>
-                                </button>
-                                <input type="text" name="q" class="form-control border-0 shadow-none bg-transparent" placeholder="جستجو در محصولات..." aria-label="Search" style="height: 45px;">
-                            </div>
-                        </form>
-                    </div>
+                    <!-- بخش چپ: منوی اصلی و جستجو -->
+<div class="collapse navbar-collapse" id="main-nav">
+    <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a href="{% url 'store:product_list' %}" class="nav-link">خانه</a></li>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="categoriesDropdown" role="button" data-bs-toggle="dropdown">دسته‌بندی محصولات</a>
+            <ul class="dropdown-menu">
+                {% for c in categories %}
+                    <li><a class="dropdown-item" href="{% url 'store:product_list_by_category' c.slug %}">{{ c.name }}</a></li>
+                {% endfor %}
+            </ul>
+        </li>
+        <li class="nav-item"><a href="{% url 'store:about_page' %}" class="nav-link">درباره ما</a></li>
+
+        <!-- 👇👇👇 کد جدید شما در اینجا قرار می‌گیرد 👇👇👇 -->
+        {% if user.is_authenticated %}
+            <li class="nav-item">
+                <a href="{% url 'store:wishlist_page' %}" class="nav-link">
+                    <i class="bi bi-heart-fill text-danger"></i> علاقه‌مندی‌ها
+                </a>
+            </li>
+        {% endif %}
+        <!-- 👆👆👆 ----------------------------------- 👆👆👆 -->
+
+    </ul>
+    <form action="{% url 'store:search' %}" method="get" class="search-form d-flex align-items-center">
+        <!-- ... فرم جستجو ... -->
+    </form>
+</div>
                 </nav>
             </div>
         </header>

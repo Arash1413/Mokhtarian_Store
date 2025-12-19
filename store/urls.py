@@ -18,6 +18,9 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('order/<int:order_id>/', views.order_detail, name='order_detail'),
 
+    path('wishlist/toggle/<int:product_id>/', views.toggle_wishlist, name='toggle_wishlist'),
+    path('wishlist/', views.wishlist_page, name='wishlist_page'),
+
     # آدرس‌های مربوط به OTP (قبل از الگوی کلی slug)
     path('otp/', views.otp_page, name='otp_page'),
     path('otp/send/', views.send_otp, name='send_otp'),

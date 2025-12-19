@@ -259,6 +259,15 @@ class Review(models.Model):
         verbose_name = "نظر"
         verbose_name_plural = "نظرات"
         ordering = ['-created_at']
+
+
+class Wishlist(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wishlist', verbose_name="کاربر")
+    products = models.ManyToManyField(Product, related_name='wishlists', verbose_name="محصولات مورد علاقه")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"لیست علاقه‌مندی {self.user.username}"
     
 
 

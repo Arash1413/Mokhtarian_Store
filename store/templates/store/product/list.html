@@ -3,85 +3,228 @@
 
 {% block content %}
 
-<!-- 👇 بنر را اینجا، کاملاً مستقل و بیرون از هر کانتینر دیگری قرار دهید 👇 -->
+<!-- ========================================== -->
+<!-- 👇 بنر تمام عرض (بیرون از کانتینر اصلی) 👇 -->
+<!-- ========================================== -->
 <div class="container-fluid p-0 mb-5">
     <img src="{% static 'images/banner.png' %}" 
          alt="Banner" 
          class="w-100 d-block" 
          style="height: auto; max-height: 600px; object-fit: cover;">
 </div>
-<!-- 👆 پایان بخش بنر 👆 -->
 
-
-<!-- 👇 بقیه محتوای سایت (محصولات) داخل کانتینر محدود شده باقی می‌مانند 👇 -->
 <div class="container px-4 py-5" id="custom-cards">
 
-    <!-- بخش پرفروش‌ترین‌ها -->
-    {% if bestsellers %}
-    <h2 class="pb-2 border-bottom">پرفروش‌ترین‌ها</h2>
-    <div class="row row-cols-1 row-cols-lg-4 align-items-stretch g-4 py-5 special-section">
-        {% for product in bestsellers %}
-            <div class="col">
-                {% include 'store/product/product_card.html' with product=product %}
-            </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- بخش تخفیف‌خورده‌ها -->
-    {% if discounted %}
-    <h2 class="pb-2 border-bottom">تخفیفات شگفت‌انگیز</h2>
-    <div class="row row-cols-1 row-cols-lg-4 align-items-stretch g-4 py-5 special-section">
-        {% for product in discounted %}
-            <div class="col">
-                {% include 'store/product/product_card.html' with product=product %}
-            </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- بخش همه محصولات -->
-    {% if category %}
-        <h2 class="pb-2 border-bottom">محصولات دسته‌بندی: {{ category.name }}</h2>
-    {% else %}
-        <h2 class="pb-2 border-bottom">همه محصولات</h2>
-    {% endif %}
+    <!-- ========================================== -->
+    <!-- 👇 بخش‌های ویژه (فقط وقتی فیلتر فعال نیست نمایش داده شوند) 👇 -->
+    <!-- ========================================== -->
+    {% if not request.GET %}
     
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 py-5">
-        {% for product in products %}
-            <div class="col">
-                {% include 'store/product/product_card.html' with product=product %}
-            </div>
-        {% empty %}
-            <p>محصولی برای نمایش وجود ندارد.</p>
-        {% endfor %}
-    </div>
-    
-    <!-- کنترل‌های صفحه‌بندی -->
-    {% if products.has_other_pages %}
-    <nav aria-label="Page navigation">
-      <ul class="pagination justify-content-center">
-        {% if products.has_previous %}
-          <li class="page-item"><a class="page-link" href="?page={{ products.previous_page_number }}">قبلی</a></li>
-        {% else %}
-          <li class="page-item disabled"><span class="page-link">قبلی</span></li>
+        <!-- پرفروش‌ترین‌ها -->
+        {% if bestsellers %}
+        <h2 class="pb-2 border-bottom">پرفروش‌ترین‌ها</h2>
+        <div class="row row-cols-1 row-cols-lg-4 align-items-stretch g-4 py-5 special-section">
+            {% for product in bestsellers %}
+                <div class="col">
+                    {% include 'store/product/product_card.html' with product=product %}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- تخفیفات شگفت‌انگیز -->
+        {% if discounted %}
+        <h2 class="pb-2 border-bottom">تخفیفات شگفت‌انگیز</h2>
+        <div class="row row-cols-1 row-cols-lg-4 align-items-stretch g-4 py-5 special-section">
+            {% for product in discounted %}
+                <div class="col">
+                    {% include 'store/product/product_card.html' with product=product %}
+                </div>
+            {% endfor %}
+        </div>
         {% endif %}
         
-        {% for i in products.paginator.page_range %}
-          {% if products.number == i %}
-            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
-          {% else %}
-            <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
-          {% endif %}
-        {% endfor %}
-
-        {% if products.has_next %}
-          <li class="page-item"><a class="page-link" href="?page={{ products.next_page_number }}">بعدی</a></li>
-        {% else %}
-          <li class="page-item disabled"><span class="page-link">بعدی</span></li>
-        {% endif %}
-      </ul>
-    </nav>
     {% endif %}
+
+    <!-- ======================================================= -->
+    <!-- 👇 شروع بخش اصلی (دکمه فیلتر + لیست محصولات) 👇 -->
+    <!-- ======================================================= -->
+    
+    <div class="row mt-5">
+        
+        <!-- ستون اصلی (لیست محصولات) - تمام عرض -->
+        <div class="col-12">
+            
+            <!-- هدر بالای محصولات: دکمه فیلتر و عنوان -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 pb-3 border-bottom gap-3">
+                
+                <!-- عنوان دسته بندی -->
+                <div class="d-flex align-items-center gap-3">
+                    <h2 class="h4 m-0 fw-bold">
+                        {% if category %}
+                            {{ category.name }}
+                        {% else %}
+                            همه محصولات
+                        {% endif %}
+                    </h2>
+                    <span class="badge bg-light text-dark border rounded-pill">{{ products.paginator.count }} کالا</span>
+                </div>
+
+                <!-- 👇 دکمه باز کردن فیلتر (Offcanvas Trigger) 👇 -->
+                <button class="btn btn-outline-dark d-flex align-items-center gap-2 px-4 shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterOffcanvas" aria-controls="filterOffcanvas">
+                    <i class="bi bi-funnel-fill"></i>
+                    فیلتر پیشرفته
+                    
+                    <!-- اگر فیلتری فعال باشد، یک علامت قرمز نشان می‌دهد -->
+                    {% if request.GET.min_price or request.GET.brands or request.GET.in_stock %}
+                        <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle">
+                            <span class="visually-hidden">فیلتر فعال</span>
+                        </span>
+                    {% endif %}
+                </button>
+            </div>
+
+            <!-- گرید محصولات -->
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                {% for product in products %}
+                    <div class="col">
+                        {% include 'store/product/product_card.html' with product=product %}
+                    </div>
+                {% empty %}
+                    <div class="col-12 text-center py-5 bg-light rounded-3">
+                        <i class="bi bi-search display-1 text-muted opacity-25"></i>
+                        <p class="mt-3 fs-5 fw-bold text-muted">محصولی با این مشخصات یافت نشد.</p>
+                        <a href="{% url 'store:product_list' %}" class="btn btn-primary mt-2">پاک کردن فیلترها</a>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- کنترل‌های صفحه‌بندی -->
+            {% if products.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-5">
+              <ul class="pagination justify-content-center">
+                {% if products.has_previous %}
+                  <li class="page-item">
+                      <a class="page-link" href="?page={{ products.previous_page_number }}&{{ url_params }}">قبلی</a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled"><span class="page-link">قبلی</span></li>
+                {% endif %}
+                
+                {% for i in products.paginator.page_range %}
+                  {% if products.number == i %}
+                    <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                  {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ i }}&{{ url_params }}">{{ i }}</a>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+        
+                {% if products.has_next %}
+                  <li class="page-item">
+                      <a class="page-link" href="?page={{ products.next_page_number }}&{{ url_params }}">بعدی</a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled"><span class="page-link">بعدی</span></li>
+                {% endif %}
+              </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    <!-- پایان بخش اصلی -->
+
 </div>
+
+<!-- ======================================================= -->
+<!-- 👇 پنل کشویی فیلترها (Offcanvas Sidebar) 👇 -->
+<!-- ======================================================= -->
+<!-- 👇 کلاس start به end تغییر کرد 👇 -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="filterOffcanvas" aria-labelledby="filterOffcanvasLabel" style="width: 350px;">
+    <div class="offcanvas-header bg-light border-bottom">
+        <h5 class="offcanvas-title fw-bold" id="filterOffcanvasLabel">
+            <i class="bi bi-sliders me-2"></i> فیلتر محصولات
+        </h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    
+    <div class="offcanvas-body p-4">
+        <form method="get">
+            <!-- حفظ مقدار جستجو اگر وجود داشته باشد -->
+            {% if request.GET.q %}
+                <input type="hidden" name="q" value="{{ request.GET.q }}">
+            {% endif %}
+
+            <!-- 1. بخش دسته‌بندی‌ها -->
+            <div class="mb-4">
+                <h6 class="fw-bold mb-3 border-start border-4 border-warning ps-2">دسته‌بندی‌ها</h6>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'store:product_list' %}" class="list-group-item list-group-item-action {% if not category %}active fw-bold{% endif %}">
+                        همه محصولات
+                    </a>
+                    {% for c in categories %}
+                    <a href="{% url 'store:product_list_by_category' c.slug %}" class="list-group-item list-group-item-action {% if category.id == c.id %}active fw-bold{% endif %}">
+                        {{ c.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <hr class="text-muted opacity-25">
+
+            <!-- 2. بخش محدوده قیمت -->
+            <div class="mb-4">
+                <h6 class="fw-bold mb-3 border-start border-4 border-warning ps-2">محدوده قیمت (تومان)</h6>
+                <div class="row g-2">
+                    <div class="col-6">
+                        {{ filter_form.min_price }}
+                    </div>
+                    <div class="col-6">
+                        {{ filter_form.max_price }}
+                    </div>
+                </div>
+            </div>
+
+            <hr class="text-muted opacity-25">
+
+            <!-- 3. بخش موجودی -->
+            <div class="mb-4">
+                <div class="form-check form-switch p-0 m-0 d-flex justify-content-between align-items-center bg-light p-3 rounded">
+                    <label class="form-check-label fw-bold cursor-pointer" for="{{ filter_form.in_stock.id_for_label }}">فقط کالاهای موجود</label>
+                    {{ filter_form.in_stock }}
+                </div>
+            </div>
+
+            <hr class="text-muted opacity-25">
+
+            <!-- 4. بخش برندها -->
+            <div class="mb-4">
+                <h6 class="fw-bold mb-3 border-start border-4 border-warning ps-2">برندها</h6>
+                <div class="brand-list px-2" style="max-height: 200px; overflow-y: auto;">
+                    {% for checkbox in filter_form.brands %}
+                        <div class="form-check mb-2">
+                            {{ checkbox.tag }}
+                            <label class="form-check-label text-secondary" for="{{ checkbox.id_for_label }}">
+                                {{ checkbox.choice_label }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- دکمه‌های پایین پنل -->
+            <div class="d-grid gap-2 mt-5 pt-3 border-top sticky-bottom bg-white">
+                <button type="submit" class="btn btn-primary fw-bold py-2 shadow-sm">
+                    <i class="bi bi-check-lg"></i> اعمال فیلتر
+                </button>
+                <a href="{% if category %}{% url 'store:product_list_by_category' category.slug %}{% else %}{% url 'store:product_list' %}{% endif %}" class="btn btn-outline-secondary btn-sm">
+                    حذف همه فیلترها
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- پایان پنل فیلترها -->
+
 {% endblock %}

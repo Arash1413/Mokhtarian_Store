@@ -13,7 +13,7 @@ from django.core.cache import cache
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
-from .models import Category, Product, Order, OrderItem, ShippingAddress, Customer
+from .models import Category, Product, Order, OrderItem, ShippingAddress, Customer, Brand
 from .forms import CustomUserCreationForm, ShippingForm
 from cart.cart import Cart
 from .utils_payment import debug_prepare_payment_data, debug_handle_response
@@ -21,10 +21,10 @@ from django.contrib.auth import login
 from .utils_shipping import calculate_shipping_cost
 import logging
 import secrets
-from .forms import UsernameRecoveryForm, SecurityAnswerForm, PasswordResetForm, ReviewForm
+from .forms import UsernameRecoveryForm, SecurityAnswerForm, PasswordResetForm, ReviewForm, ProductFilterForm
 from .telegram_utils import send_bale_order_notification
 from django.utils import timezone
-from .models import Coupon, Review
+from .models import Coupon, Review, Wishlist, Category, Product, Brand
 from django.db.models import Avg # برای محاسبه میانگین امتیاز
 
 logger = logging.getLogger(__name__)
@@ -36,23 +36,70 @@ logger = logging.getLogger(__name__)
 def product_list(request, category_slug=None):
     category = None
     products_all = Product.objects.filter(available=True)
+    
+    # فیلتر بر اساس دسته‌بندی (URL)
     if category_slug:
         category = get_object_or_404(Category, slug=category_slug)
         products_all = products_all.filter(category=category)
-    bestsellers = Product.objects.filter(available=True, is_bestseller=True)[:8]
-    discounted = Product.objects.filter(available=True, old_price__isnull=False).exclude(old_price=0)[:8]
-    newest = Product.objects.filter(available=True).order_by('-created')[:8]
-    paginator = Paginator(products_all, 12)
+
+    # --- بخش جدید: اعمال فیلترهای فرم ---
+    filter_form = ProductFilterForm(request.GET)
+    
+    if filter_form.is_valid():
+        # 1. فیلتر قیمت
+        min_p = filter_form.cleaned_data.get('min_price')
+        max_p = filter_form.cleaned_data.get('max_price')
+        if min_p:
+            products_all = products_all.filter(price__gte=min_p)
+        if max_p:
+            products_all = products_all.filter(price__lte=max_p)
+            
+        # 2. فیلتر موجودی
+        if filter_form.cleaned_data.get('in_stock'):
+            products_all = products_all.filter(stock__gt=0)
+            
+        # 3. فیلتر برند
+        brands = filter_form.cleaned_data.get('brands')
+        if brands:
+            products_all = products_all.filter(brand__in=brands)
+    # -------------------------------------
+
+    # بخش‌های قبلی (پرفروش و تخفیف‌دار) - این‌ها را معمولاً فیلتر نمی‌کنیم
+    # اما اگر بخواهید فیلتر روی این‌ها هم اعمال شود، باید کدهای فیلتر را بالاتر ببرید.
+    # در اینجا فرض بر این است فیلتر فقط روی لیست اصلی پایین صفحه اعمال می‌شود.
+    bestsellers = Product.objects.filter(available=True, is_bestseller=True)[:4]
+    discounted = Product.objects.filter(available=True, old_price__isnull=False).exclude(old_price=0)[:4]
+    
+    # صفحه‌بندی (روی محصولات فیلتر شده)
+    paginator = Paginator(products_all, 12) 
     page_number = request.GET.get('page')
     products_paginated = paginator.get_page(page_number)
+    
+    # برای نگه داشتن فیلترها هنگام عوض کردن صفحه (Pagination)
+    # یک رشته کوئری می‌سازیم (مثلا &min_price=100&brands=1)
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        del query_params['page']
+    url_params = query_params.urlencode()
+
     context = {
-        'category': category, 'products': products_paginated,
-        'bestsellers': bestsellers, 'discounted': discounted, 'newest': newest,
+        'category': category, 
+        'products': products_paginated,
+        'bestsellers': bestsellers, 
+        'discounted': discounted,
+        'filter_form': filter_form, # ارسال فرم به قالب
+        'url_params': url_params,   # ارسال پارامترهای URL برای صفحه‌بندی
     }
     return render(request, 'store/product/list.html', context)
 
 def product_detail(request, slug):
     product = get_object_or_404(Product, slug=slug, available=True)
+
+    is_in_wishlist = False
+    if request.user.is_authenticated:
+        if Wishlist.objects.filter(user=request.user, products=product).exists():
+            is_in_wishlist = True
+
     related_products = Product.objects.filter(category=product.category, available=True).exclude(slug=slug).order_by('?')[:4]
     
     # دریافت نظرات تایید شده
@@ -66,7 +113,9 @@ def product_detail(request, slug):
         'related_products': related_products,
         'reviews': reviews,
         'average_rating': average_rating,
-        'review_form': ReviewForm() # فرم خالی برای ارسال به قالب
+        'review_form': ReviewForm(), # فرم خالی برای ارسال به قالب
+        'is_in_wishlist': is_in_wishlist
+    
     }
     return render(request, 'store/product/detail.html', context)
 
@@ -680,5 +729,32 @@ def submit_review(request, product_id):
             return redirect('store:product_list')
             
     return redirect('store:product_list')
+
+
+
+@login_required(login_url='login')
+def toggle_wishlist(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    
+    # دریافت یا ایجاد لیست برای کاربر
+    wishlist, created = Wishlist.objects.get_or_create(user=request.user)
+    
+    if product in wishlist.products.all():
+        # اگر محصول در لیست بود، حذفش کن
+        wishlist.products.remove(product)
+        messages.info(request, f"{product.name} از لیست علاقه‌مندی‌ها حذف شد.")
+    else:
+        # اگر نبود، اضافه‌اش کن
+        wishlist.products.add(product)
+        messages.success(request, f"{product.name} به لیست علاقه‌مندی‌ها اضافه شد.")
+    
+    # بازگشت به همان صفحه‌ای که کاربر در آن بوده (مثلا صفحه محصول)
+    return redirect(request.META.get('HTTP_REFERER', 'store:product_list'))
+
+@login_required(login_url='login')
+def wishlist_page(request):
+    wishlist, created = Wishlist.objects.get_or_create(user=request.user)
+    products = wishlist.products.all()
+    return render(request, 'store/wishlist.html', {'products': products})
 
 

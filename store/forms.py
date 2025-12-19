@@ -4,7 +4,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django import forms
 from .models import ShippingAddress
-from .models import ShippingAddress, Customer
+from .models import ShippingAddress, Customer, Brand
 from .models import Review
 
 
@@ -140,3 +140,20 @@ class ReviewForm(forms.ModelForm):
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'متن نظر خود را بنویسید...'}),
             'rating': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 5}),
         }
+
+
+class ProductFilterForm(forms.Form):
+    # فیلتر قیمت
+    min_price = forms.IntegerField(required=False, widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'از تومان'}))
+    max_price = forms.IntegerField(required=False, widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'تا تومان'}))
+    
+    # فیلتر موجودی (چک‌باکس)
+    in_stock = forms.BooleanField(required=False, label="فقط کالاهای موجود", widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    
+    # فیلتر برند (چک‌باکس چند انتخابی)
+    brands = forms.ModelMultipleChoiceField(
+        queryset=Brand.objects.all(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+        label="برندها"
+    )
