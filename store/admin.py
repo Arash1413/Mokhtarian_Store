@@ -55,7 +55,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.db.models import Sum
-from .models import Category, Product, Customer, Order, OrderItem, Attribute, ProductAttribute, ShippingAddress, Brand
+from .models import Category, Product, Customer, Order, OrderItem, Attribute, ProductAttribute, ShippingAddress, Brand, Coupon
 from .models import FAQ
 
 # تنظیمات هدر پنل ادمین
@@ -275,3 +275,25 @@ class FAQAdmin(admin.ModelAdmin):
     list_display = ['question', 'sort_order', 'is_active']
     list_editable = ['sort_order', 'is_active']
     search_fields = ['question', 'answer']
+
+@admin.register(Coupon)
+class CouponAdmin(admin.ModelAdmin):
+    list_display = ['code', 'valid_from', 'valid_to', 'discount', 'active']
+    list_filter = ['active', 'valid_from', 'valid_to']
+    search_fields = ['code']
+    
+    # 👇 این خط را اضافه کنید تا انتخاب محصولات راحت شود 👇
+    filter_horizontal = ['products'] 
+    
+    fieldsets = (
+        (None, {
+            'fields': ('code', 'discount', 'active')
+        }),
+        ('محدودیت‌ها', {
+            'fields': ('products',),
+            'description': 'اگر محصولی انتخاب نکنید، کد تخفیف روی تمام محصولات اعمال می‌شود.'
+        }),
+        ('زمان اعتبار', {
+            'fields': ('valid_from', 'valid_to'),
+        }),
+    )

@@ -25,6 +25,7 @@ urlpatterns = [
 
     # آدرس‌های مربوط به پرداخت
     path('payment/verify/', views.payment_verify, name='payment_verify'),
+    path('coupon/apply/', views.coupon_apply, name='coupon_apply'),
 
     path('forgot-password/', views.forgot_password_request, name='forgot_password'),
     path('forgot-password/verify/', views.verify_security_question, name='verify_security_question'),
