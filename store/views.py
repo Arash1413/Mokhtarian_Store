@@ -26,6 +26,7 @@ from .telegram_utils import send_bale_order_notification
 from django.utils import timezone
 from .models import Coupon, Review, Wishlist, Category, Product, Brand
 from django.db.models import Avg # برای محاسبه میانگین امتیاز
+from django.db.models import Count, Q, Case, When, Value, IntegerField
 
 logger = logging.getLogger(__name__)
 
@@ -94,28 +95,56 @@ def product_list(request, category_slug=None):
 
 def product_detail(request, slug):
     product = get_object_or_404(Product, slug=slug, available=True)
+    
+    # ------------------------------------------------------------------
+    # 👇👇👇 منطق هوشمند محصولات مرتبط (Smart Related Products) 👇👇👇
+    # ------------------------------------------------------------------
+    
+    # 1. دریافت لیست مقادیر ویژگی‌های محصول فعلی (مثلاً: قرمز، XL، کتان)
+    current_attr_values = product.attributes.values_list('value', flat=True)
+
+    related_products = Product.objects.filter(
+        category=product.category,  # شرط ۱: حتماً هم‌دسته باشند
+        available=True
+    ).exclude(
+        id=product.id  # خود محصول فعلی را حذف کن
+    ).annotate(
+        # امتیازدهی ۱: آیا برند یکسان است؟ (اگر بله ۱ امتیاز، اگر نه ۰)
+        is_same_brand=Case(
+            When(brand=product.brand, then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField(),
+        ),
+        # امتیازدهی ۲: تعداد ویژگی‌های مشترک را بشمار
+        # (هرچقدر ویژگی‌های مثل رنگ یا سایز مشابه بیشتر باشد، عدد بزرگتر می‌شود)
+        shared_tags_count=Count(
+            'attributes', 
+            filter=Q(attributes__value__in=current_attr_values)
+        )
+    ).order_by(
+        '-is_same_brand',       # اولویت اول: هم‌برندها بالاتر
+        '-shared_tags_count',   # اولویت دوم: بیشترین شباهت ویژگی
+        '-created'              # اولویت سوم: جدیدترین‌ها
+    )[:4] # فقط ۴ تا را برگردان
+    
+    # ------------------------------------------------------------------
+
+    # کدهای قبلی (نظرات و لیست علاقه‌مندی) بدون تغییر باقی می‌مانند
+    reviews = Review.objects.filter(product=product, status=True)
+    average_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
 
     is_in_wishlist = False
     if request.user.is_authenticated:
         if Wishlist.objects.filter(user=request.user, products=product).exists():
             is_in_wishlist = True
 
-    related_products = Product.objects.filter(category=product.category, available=True).exclude(slug=slug).order_by('?')[:4]
-    
-    # دریافت نظرات تایید شده
-    reviews = Review.objects.filter(product=product, status=True)
-    
-    # محاسبه میانگین امتیاز
-    average_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
-
     context = {
         'product': product, 
-        'related_products': related_products,
+        'related_products': related_products, # حالا لیست هوشمند ارسال می‌شود
         'reviews': reviews,
         'average_rating': average_rating,
-        'review_form': ReviewForm(), # فرم خالی برای ارسال به قالب
-        'is_in_wishlist': is_in_wishlist
-    
+        'review_form': ReviewForm(),
+        'is_in_wishlist': is_in_wishlist,
     }
     return render(request, 'store/product/detail.html', context)
 
