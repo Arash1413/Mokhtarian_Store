@@ -29,6 +29,7 @@ from django.db.models import Avg # برای محاسبه میانگین امتی
 from django.db.models import Count, Q, Case, When, Value, IntegerField
 from django.core.cache import cache
 import secrets
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -314,100 +315,101 @@ def verify_otp(request):
                 })
 
             try:
-                full_name = shipping_data.get('full_name', f"کاربر {phone}")
-                
-                # ==========================================================
-                # بخش ۱: همگام‌سازی کاربر (User Sync Logic) ✅
-                # ==========================================================
-                customer = None
-                
-                if request.user.is_authenticated:
-                    # اولویت با کاربر لاگین شده است
-                    customer = Customer.objects.filter(user=request.user).first()
+                with transaction.atomic():
+                    full_name = shipping_data.get('full_name', f"کاربر {phone}")
                     
-                    if customer:
-                        # اگر کاربر پروفایل دارد و شماره جدیدی وریفای کرده، آپدیت کن (اگر تکراری نباشد)
-                        if customer.phone_number != phone:
-                            if not Customer.objects.filter(phone_number=phone).exclude(id=customer.id).exists():
-                                customer.phone_number = phone
-                                customer.save()
+                    # ==========================================================
+                    # بخش ۱: همگام‌سازی کاربر (User Sync Logic) ✅
+                    # ==========================================================
+                    customer = None
+                    
+                    if request.user.is_authenticated:
+                        # اولویت با کاربر لاگین شده است
+                        customer = Customer.objects.filter(user=request.user).first()
                         
-                        # اگر نام نداشت، نام فرم را ست کن
-                        if not customer.name:
-                            customer.name = full_name
-                            customer.save()
+                        if customer:
+                            # اگر کاربر پروفایل دارد و شماره جدیدی وریفای کرده، آپدیت کن (اگر تکراری نباشد)
+                            if customer.phone_number != phone:
+                                if not Customer.objects.filter(phone_number=phone).exclude(id=customer.id).exists():
+                                    customer.phone_number = phone
+                                    customer.save()
                             
+                            # اگر نام نداشت، نام فرم را ست کن
+                            if not customer.name:
+                                customer.name = full_name
+                                customer.save()
+                                
+                        else:
+                            # کاربر لاگین است اما پروفایل ندارد (شاید قبلا به صورت مهمان با این شماره خرید کرده)
+                            existing_guest = Customer.objects.filter(phone_number=phone, user__isnull=True).first()
+                            
+                            if existing_guest:
+                                # اتصال اکانت مهمان به اکانت کاربری
+                                customer = existing_guest
+                                customer.user = request.user
+                                customer.name = full_name
+                                customer.save()
+                            else:
+                                # ساخت مشتری جدید متصل به یوزر
+                                customer = Customer.objects.create(
+                                    user=request.user,
+                                    phone_number=phone,
+                                    name=full_name
+                                )
                     else:
-                        # کاربر لاگین است اما پروفایل ندارد (شاید قبلا به صورت مهمان با این شماره خرید کرده)
-                        existing_guest = Customer.objects.filter(phone_number=phone, user__isnull=True).first()
-                        
-                        if existing_guest:
-                            # اتصال اکانت مهمان به اکانت کاربری
-                            customer = existing_guest
-                            customer.user = request.user
+                        # کاربر مهمان است
+                        customer, created = Customer.objects.get_or_create(
+                            phone_number=phone,
+                            defaults={'name': full_name}
+                        )
+                        if not created and not customer.name:
                             customer.name = full_name
                             customer.save()
-                        else:
-                            # ساخت مشتری جدید متصل به یوزر
-                            customer = Customer.objects.create(
-                                user=request.user,
-                                phone_number=phone,
-                                name=full_name
-                            )
-                else:
-                    # کاربر مهمان است
-                    customer, created = Customer.objects.get_or_create(
-                        phone_number=phone,
-                        defaults={'name': full_name}
+                    # ==========================================================
+
+                    # بخش ۲: محاسبات مالی و هزینه ارسال
+                    shipping_method = shipping_data.get('shipping_method', 'mahex')
+                    total_weight = cart.get_total_weight()
+                    
+                    # دریافت مبلغ کل سبد خرید (اگر متد get_total_price را آپدیت کرده باشید، تخفیف لحاظ شده است)
+                    cart_total_price = cart.get_total_price()
+                    
+                    final_shipping_cost = 0
+                    if shipping_method == 'post':
+                        final_shipping_cost = calculate_shipping_cost(total_weight)
+                    
+                    final_total_price = float(cart_total_price) + float(final_shipping_cost)
+
+                    # بخش ۳: ایجاد سفارش در دیتابیس
+                    order = Order.objects.create(
+                        customer=customer, 
+                        complete=False, 
+                        total_price=final_total_price,
+                        shipping_method=shipping_method,
+                        shipping_cost=final_shipping_cost,
+                        status='pending'
                     )
-                    if not created and not customer.name:
-                        customer.name = full_name
-                        customer.save()
-                # ==========================================================
 
-                # بخش ۲: محاسبات مالی و هزینه ارسال
-                shipping_method = shipping_data.get('shipping_method', 'mahex')
-                total_weight = cart.get_total_weight()
-                
-                # دریافت مبلغ کل سبد خرید (اگر متد get_total_price را آپدیت کرده باشید، تخفیف لحاظ شده است)
-                cart_total_price = cart.get_total_price()
-                
-                final_shipping_cost = 0
-                if shipping_method == 'post':
-                    final_shipping_cost = calculate_shipping_cost(total_weight)
-                
-                final_total_price = float(cart_total_price) + float(final_shipping_cost)
+                    # ثبت آیتم‌های سفارش
+                    for item in cart:
+                        OrderItem.objects.create(
+                            order=order,
+                            product=item['product'],
+                            quantity=item['quantity'],
+                            price=item['price']
+                        )
 
-                # بخش ۳: ایجاد سفارش در دیتابیس
-                order = Order.objects.create(
-                    customer=customer, 
-                    complete=False, 
-                    total_price=final_total_price,
-                    shipping_method=shipping_method,
-                    shipping_cost=final_shipping_cost,
-                    status='pending'
-                )
-
-                # ثبت آیتم‌های سفارش
-                for item in cart:
-                    OrderItem.objects.create(
+                    # ثبت آدرس ارسال
+                    ShippingAddress.objects.create(
+                        customer=customer,
                         order=order,
-                        product=item['product'],
-                        quantity=item['quantity'],
-                        price=item['price']
+                        full_name=shipping_data.get('full_name'),
+                        phone_number=shipping_data.get('phone_number'),
+                        address=shipping_data.get('address'),
+                        city=shipping_data.get('city'),
+                        state=shipping_data.get('state'),
+                        zipcode=shipping_data.get('zipcode')
                     )
-
-                # ثبت آدرس ارسال
-                ShippingAddress.objects.create(
-                    customer=customer,
-                    order=order,
-                    full_name=shipping_data.get('full_name'),
-                    phone_number=shipping_data.get('phone_number'),
-                    address=shipping_data.get('address'),
-                    city=shipping_data.get('city'),
-                    state=shipping_data.get('state'),
-                    zipcode=shipping_data.get('zipcode')
-                )
 
                 # بخش ۴: اتصال به درگاه پرداخت
                 amount_toman = int(final_total_price)

@@ -221,8 +221,11 @@ SMS_IR_API_KEY = config('X-API-KEY')
 
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "my-unique-cache-name",
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": config('REDIS_URL'), # آدرس از فایل env خوانده می‌شود
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
     }
 }
 

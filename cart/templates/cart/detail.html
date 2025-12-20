@@ -255,13 +255,21 @@
 
                     }
                 })
-                .catch(error => console.error('Error:', error))
-                .finally(() => {
-                    // فعال کردن مجدد ورودی
-                    this.disabled = false;
-                    this.style.opacity = '1';
-                    this.focus();
-                });
+                 .catch(error => {
+            // 👇 بخش اصلاح شده اینجاست 👇
+            console.error('Error:', error);
+            
+            // نمایش پیام خطا به کاربر
+            alert("خطا در ارتباط با سرور رخ داده است. برای اطمینان از صحت قیمت‌ها و سبد خرید، لطفاً صفحه را مجدداً بارگذاری (Refresh) کنید.");
+            
+            // اگر می‌خواهید صفحه به طور خودکار رفرش شود، خط زیر را از حالت کامنت خارج کنید:
+            // window.location.reload(); 
+        })
+        .finally(() => {
+            this.disabled = false;
+            this.style.opacity = '1';
+            this.focus();
+        });
             });
         });
     });

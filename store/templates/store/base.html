@@ -11,7 +11,7 @@
     <link rel="canonical" href="{{ request.build_absolute_uri }}" />
     
     
-    <meta property="og:title" content="{% block og_title %}فروشگاه Mokhtarian{% endblock %}" />
+    <meta property="og:title" content="{% block og_title %}فروشگاه Mokhtarian {% endblock %}" />
     <meta property="og:description" content="{% block og_description %}خرید آنلاین لوازم خانگی{% endblock %}" />
     <meta property="og:image" content="{% block og_image %}{% static 'images/logo.png' %}{% endblock %}" />
         <!-- Favicon-->
@@ -203,7 +203,7 @@
                     </div>
 
                     <!-- بخش وسط: لوگو -->
-                    <a class="navbar-brand navbar-brand-centered fs-3" href="/">Mokhtarian</a>
+                    <a class="navbar-brand navbar-brand-centered fs-3" href="/">Mokhtarian Store</a>
                     
                     <!-- دکمه همبرگری برای موبایل -->
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav">
@@ -239,6 +239,11 @@
     <form action="{% url 'store:search' %}" method="get" class="search-form d-flex align-items-center">
         <!-- ... فرم جستجو ... -->
     </form>
+    <div class="d-none d-lg-block ms-3 border-start ps-3">
+                    <a href="/">
+                        <img src="{% static 'images/logo.png' %}" alt="Logo" style="height: 50px; width: auto; object-fit: contain;">
+                    </a>
+                </div>
 </div>
                 </nav>
             </div>
