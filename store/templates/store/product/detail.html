@@ -1,7 +1,7 @@
 {% extends "store/base.html" %}
 {% load static %}
 
-{% block title %}{{ product.seo_title|default:product.name }} | MELO{% endblock %}
+{% block title %}{{ product.seo_title|default:product.name }} | Mokhtarian{% endblock %}
 {% block meta_description %}{{ product.seo_description|default:product.description|truncatewords:30 }}{% endblock %}
 
 {% block og_title %}{{ product.name }}{% endblock %}
@@ -381,7 +381,7 @@
   "sku": "{{ product.id }}",
   "brand": {
     "@type": "Brand",
-    "name": "{{ product.brand.name|default:'MELO' }}"
+    "name": "{{ product.brand.name|default:'Mokhtarian' }}"
   },
   "offers": {
     "@type": "Offer",

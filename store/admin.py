@@ -59,7 +59,7 @@ from .models import Category, Product, Customer, Order, OrderItem, Attribute, Pr
 from .models import FAQ
 
 # تنظیمات هدر پنل ادمین
-admin.site.site_header = "مدیریت فروشگاه ملو"
+admin.site.site_header = "مدیریت فروشگاه مختاریان"
 admin.site.site_title = "پنل مدیریت"
 admin.site.index_title = "به پنل مدیریت خوش آمدید"
 

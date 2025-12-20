@@ -27,6 +27,8 @@ from django.utils import timezone
 from .models import Coupon, Review, Wishlist, Category, Product, Brand
 from django.db.models import Avg # برای محاسبه میانگین امتیاز
 from django.db.models import Count, Q, Case, When, Value, IntegerField
+from django.core.cache import cache
+import secrets
 
 logger = logging.getLogger(__name__)
 
@@ -216,13 +218,38 @@ def otp_page(request):
         
     return render(request, 'store/otp_page.html', {'phone': phone})
 
-@csrf_exempt
 def send_otp(request):
     if request.method == "POST":
+        
+        # ==========================================================
+        # 👇👇👇 بخش جدید: محدودیت تعداد درخواست بر اساس IP 👇👇👇
+        # ==========================================================
+        # دریافت IP کاربر (اگر پشت پروکسی/Nginx هستید ممکن است نیاز به هدر X-Forwarded-For باشد)
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            user_ip = x_forwarded_for.split(',')[0]
+        else:
+            user_ip = request.META.get('REMOTE_ADDR')
+
+        request_count_key = f"sms_limit_{user_ip}"
+        request_count = cache.get(request_count_key, 0)
+
+        if request_count >= 5:  # محدودیت ۵ بار در ساعت
+            return JsonResponse({
+                "error": "تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً یک ساعت دیگر تلاش کنید."
+            }, status=429)
+
+        # افزایش شمارنده (اعتبار ۱ ساعت معادل ۳۶۰۰ ثانیه)
+        cache.set(request_count_key, request_count + 1, timeout=3600)
+        # ==========================================================
+
+
+        # --- ادامه کدهای قبلی شما ---
         phone = request.POST.get("phone")
         if not phone:
             return JsonResponse({"error": "شماره موبایل الزامی است."}, status=400)
 
+        # محدودیت ارسال مجدد برای همان شماره (کد قبلی خودتان)
         if cache.get(f"otp_sent_{phone}"):
             return JsonResponse({"error": "کد قبلاً ارسال شده است. لطفاً ۲ دقیقه صبر کنید."}, status=429)
 
@@ -261,7 +288,7 @@ def send_otp(request):
     return JsonResponse({"error": "درخواست نامعتبر."}, status=405)
 
 
-@csrf_exempt
+# @csrf_exempt
 def verify_otp(request):
     if request.method == "POST":
         phone = request.POST.get("phone") or request.session.get('pending_phone')
