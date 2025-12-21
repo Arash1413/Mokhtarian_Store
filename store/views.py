@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 def product_list(request, category_slug=None):
     category = None
     products_all = Product.objects.filter(available=True)
+    latest_products = Product.objects.filter(available=True).order_by('-created')[:5]
     
     # فیلتر بر اساس دسته‌بندی (URL)
     if category_slug:
@@ -91,6 +92,7 @@ def product_list(request, category_slug=None):
         'products': products_paginated,
         'bestsellers': bestsellers, 
         'discounted': discounted,
+        'latest_products': latest_products,
         'filter_form': filter_form, # ارسال فرم به قالب
         'url_params': url_params,   # ارسال پارامترهای URL برای صفحه‌بندی
     }
