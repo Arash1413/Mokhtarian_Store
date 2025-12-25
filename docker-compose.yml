@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: shop_db
+    restart: always
+    environment:
+      - POSTGRES_DB=mokhtarian_shop_db
+      - POSTGRES_USER=mokhtarian_admin
+      - POSTGRES_PASSWORD=arash.m.82
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: shop_redis
+    restart: always
+
+  web:
+    build: .
+    container_name: shop_web
+    restart: always
+    # دستور اجرا: ابتدا دیتابیس آماده شود، سپس میگریشن و در نهایت اجرا
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    expose:
+      - 8000
+
+  nginx:
+    image: nginx:alpine
+    container_name: shop_nginx
+    restart: always
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
