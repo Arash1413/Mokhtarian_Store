@@ -5,4 +5,4 @@ Disallow: /checkout/
 Disallow: /profile/
 Disallow: /otp/
 
-Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://mokhtarianshop.ir/sitemap.xml

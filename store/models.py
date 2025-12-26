@@ -90,7 +90,7 @@ class Customer(models.Model):
     # --- تغییرات کلیدی ---
     # 1. OneToOneField را به ForeignKey تغییر دهید.
     # 2. null=True و blank=True را اضافه کنید.
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True)
     # --- پایان تغییرات ---
 
     name = models.CharField(max_length=200, null=True)

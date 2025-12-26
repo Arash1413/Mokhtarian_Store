@@ -29,9 +29,9 @@ BALE_ADMIN_CHAT_ID = config('BALE_ADMIN_CHAT_ID')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+# ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
-ALLOWED_HOSTS = ['mokhtarianshop.ir']
+ALLOWED_HOSTS = ['mokhtarianshop.ir', 'www.mokhtarianshop.ir', '185.231.180.222', '127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -135,9 +135,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fa-ir'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Tehran'
 
 USE_I18N = True
 
@@ -195,6 +195,19 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
     SECURE_CONTENT_TYPE_NOSNIFF = True
+
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    CSRF_TRUSTED_ORIGINS = [
+    'https://mokhtarianshop.ir',
+    'https://www.mokhtarianshop.ir',
+]
+
+else:
+    # در محیط سیستم خودتان (Local) این‌ها باید False باشند
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False 
 
 
 # AXES_FAILURE_LIMIT = 3  # بعد از ۳ بار تلاش ناموفق قفل شود
