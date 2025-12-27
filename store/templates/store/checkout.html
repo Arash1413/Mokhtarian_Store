@@ -1,21 +1,42 @@
-<!-- store/templates/store/checkout.html -->
 {% extends "store/base.html" %}
+{% load static %}
 
 {% block content %}
+<!-- اضافه کردن استایل Select2 در ابتدای بلاک -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<style>
+    /* هماهنگ‌سازی Select2 با ظاهر بوت‌استرپ 5 */
+    .select2-container--default .select2-selection--single {
+        height: 45px !important;
+        border: 1px solid #ced4da !important;
+        border-radius: 0.375rem !important;
+        padding-top: 8px !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 42px !important;
+    }
+    .select2-container {
+        width: 100% !important;
+        display: block;
+    }
+</style>
+
 <div class="container my-5">
     <div class="row g-5">
         <div class="col-md-7 col-lg-8">
             <h4 class="mb-3 fw-bold">اطلاعات ارسال</h4>
             
-            {% if error %}
-                <div class="alert alert-danger">{{ error }}</div>
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    لطفاً خطاهای زیر را اصلاح کنید.
+                </div>
             {% endif %}
 
-            <form method="POST" action="{% url 'store:checkout' %}">
+            <form method="POST">
                 {% csrf_token %}
                 
                 <div class="row g-3">
-                    <!-- فیلدهای فرم آدرس (نام، تلفن، آدرس و ...) -->
                     <div class="col-sm-6">
                         <label class="form-label">نام و نام خانوادگی</label>
                         {{ form.full_name }}
@@ -24,19 +45,23 @@
                         <label class="form-label">شماره موبایل</label>
                         {{ form.phone_number }}
                     </div>
+                    
                     <div class="col-12">
                         <label class="form-label">استان</label>
+                        <!-- دقت کنید: جنگو این را رندر می‌کند. آیدی آن معمولا id_state است -->
                         {{ form.state }}
                     </div>
+                    
                     <div class="col-12">
                         <label class="form-label">شهر</label>
                         {{ form.city }}
                     </div>
+                    
                     <div class="col-12">
                         <label class="form-label">آدرس دقیق</label>
                         {{ form.address }}
                     </div>
-                    <div class="col-12">
+                    <div class="col-sm-6">
                         <label class="form-label">کد پستی</label>
                         {{ form.zipcode }}
                     </div>
@@ -64,7 +89,6 @@
                 </div>
 
                 <hr class="my-4">
-
                 <button class="w-100 btn btn-primary btn-lg fw-bold" type="submit">تایید و ادامه</button>
             </form>
         </div>
@@ -84,7 +108,7 @@
                         </li>
                         <li class="list-group-item d-flex justify-content-between bg-light">
                             <div class="text-success"><h6 class="my-0">هزینه ارسال</h6></div>
-                            <span class="text-success" id="display-shipping-cost">0 تومان</span>
+                            <span class="text-success" id="display-shipping-cost">پس‌کرایه</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between fw-bold fs-5">
                             <span>مبلغ قابل پرداخت</span>
@@ -97,51 +121,90 @@
     </div>
 </div>
 
-<!-- جاوااسکریپت برای محاسبه قیمت نهایی -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const mahexRadio = document.getElementById('mahex');
-        const postRadio = document.getElementById('post');
-        const displayShipping = document.getElementById('display-shipping-cost');
-        const displayTotal = document.getElementById('final-total-display');
+$(document).ready(function() {
+    // ۱. پیدا کردن اینپوت‌ها (آیدی‌ها باید با id ست شده در forms.py یکی باشد)
+    const stateInput = document.getElementById('state_input');
+    const cityInput = document.getElementById('city_input');
 
-        // --- اصلاح خطای سینتکس و دریافت امن داده‌ها ---
-        // 1. مقادیر را داخل "" میگذاریم تا به رشته تبدیل شوند (رفع خطای IDE)
-        // 2. با .replace(/,/g, '') کاماهای احتمالی را حذف می‌کنیم
-        // 3. با parseFloat یا parseInt به عدد تبدیل می‌کنیم
-        // 4. |default:0 را اضافه میکنیم تا اگر مقدار None بود، خطا ندهد
+    if (!stateInput || !cityInput) {
+        console.error("خطا: اینپوت‌های استان یا شهر پیدا نشدند. آیدی‌ها را در forms.py چک کنید.");
+        return;
+    }
+
+    // ۲. ساختن دیتالیست‌ها به صورت خودکار (برای جلوگیری از خطای Null)
+    let statesDatalist = document.getElementById('states-list');
+    if (!statesDatalist) {
+        statesDatalist = document.createElement('datalist');
+        statesDatalist.id = 'states-list';
+        document.body.appendChild(statesDatalist);
+    }
+    stateInput.setAttribute('list', 'states-list');
+
+    let citiesDatalist = document.getElementById('cities-list');
+    if (!citiesDatalist) {
+        citiesDatalist = document.createElement('datalist');
+        citiesDatalist.id = 'cities-list';
+        document.body.appendChild(citiesDatalist);
+    }
+    cityInput.setAttribute('list', 'cities-list');
+
+    let jsonData = [];
+    const jsonUrl = "{% static 'json/iran_cities.json' %}";
+
+    // ۳. لود کردن دیتا
+    fetch(jsonUrl)
+        .then(response => response.json())
+        .then(data => {
+            jsonData = data;
+            console.log("JSON loaded successfully.");
+            
+            let tempStates = "";
+            data.forEach(item => {
+                tempStates += `<option value="${item.name}">`;
+            });
+            statesDatalist.innerHTML = tempStates;
+        })
+        .catch(err => console.error("Error loading JSON:", err));
+
+    // ۴. آپدیت شهرهابا تایپ استان
+    stateInput.addEventListener('input', function() {
+        const currentVal = this.value;
+        const provinceMatch = jsonData.find(p => p.name === currentVal);
         
-        const cartTotalStr = "{{ cart.get_total_price|floatformat:'0' }}";
-        const postCostStr = "{{ shipping_cost_post|default:0|floatformat:'0' }}";
-
-        const cartTotal = parseFloat(cartTotalStr.replace(/,/g, '')) || 0;
-        const postCost = parseFloat(postCostStr.replace(/,/g, '')) || 0;
-
-        function updatePrice() {
-            let shippingPrice = 0;
-            
-            if (postRadio.checked) {
-                shippingPrice = postCost;
-                // نمایش قیمت پست با سه رقم جداکننده
-                displayShipping.innerText = shippingPrice.toLocaleString('fa-IR') + ' تومان';
-            } else {
-                shippingPrice = 0;
-                displayShipping.innerText = 'پس‌کرایه';
-            }
-
-            let finalTotal = cartTotal + shippingPrice;
-            // نمایش قیمت نهایی با سه رقم جداکننده و فونت فارسی (اختیاری)
-            displayTotal.innerText = finalTotal.toLocaleString('fa-IR') + ' تومان';
-        }
-
-        // گوش‌دادن به تغییرات رادیوباتن‌ها
-        if(mahexRadio && postRadio) {
-            mahexRadio.addEventListener('change', updatePrice);
-            postRadio.addEventListener('change', updatePrice);
-            
-            // یکبار اجرا هنگام لود صفحه برای تنظیم وضعیت اولیه
-            updatePrice();
+        if (provinceMatch && provinceMatch.cities) {
+            let tempCities = "";
+            provinceMatch.cities.forEach(city => {
+                tempCities += `<option value="${city.name}">`;
+            });
+            citiesDatalist.innerHTML = tempCities;
         }
     });
+
+    // ۵. بخش هزینه ارسال (بدون تغییر)
+    const postRadio = document.getElementById('post');
+    const mahexRadio = document.getElementById('mahex');
+    const displayShipping = document.getElementById('display-shipping-cost');
+    const displayTotal = document.getElementById('final-total-display');
+
+    const cartTotal = parseFloat("{{ cart.get_total_price|floatformat:'0' }}".replace(/,/g, '')) || 0;
+    const postCost = parseFloat("{{ shipping_cost_post|default:0|floatformat:'0' }}".replace(/,/g, '')) || 0;
+
+    function updatePrice() {
+        if (!displayShipping || !displayTotal) return;
+        let isPost = postRadio && postRadio.checked;
+        let shippingPrice = isPost ? postCost : 0;
+        displayShipping.innerText = isPost ? shippingPrice.toLocaleString('fa-IR') + ' تومان' : 'پس‌کرایه';
+        let finalTotal = cartTotal + shippingPrice;
+        displayTotal.innerHTML = finalTotal.toLocaleString('fa-IR') + ' <small class="fs-6">تومان</small>';
+    }
+
+    if(mahexRadio && postRadio) {
+        mahexRadio.addEventListener('change', updatePrice);
+        postRadio.addEventListener('change', updatePrice);
+        updatePrice();
+    }
+});
 </script>
 {% endblock %}

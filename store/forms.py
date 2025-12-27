@@ -95,8 +95,8 @@ class ShippingForm(forms.ModelForm):
             'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'نام و نام خانوادگی'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'شماره تماس'}),
             'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'آدرس کامل'}),
-            'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'شهر'}),
-            'state': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'استان'}),
+            'state': forms.TextInput(attrs={'class': 'form-control', 'id': 'state_input'}),
+            'city': forms.TextInput(attrs={'class': 'form-control', 'id': 'city_input'}),
             'zipcode': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'کد پستی'}),
         }
 
