@@ -88,61 +88,7 @@ class ShippingAddressInline(admin.StackedInline):
     verbose_name_plural = 'آدرس ارسال'
     classes = ['collapse']
 
-# @admin.register(Order)
-# class OrderAdmin(admin.ModelAdmin):
-#     list_display = ['id', 'customer_link', 'status_colored', 'total_price_display', 'date_ordered_jalali', 'tracking_code']
-#     list_filter = ['status', 'date_ordered', 'complete']
-#     search_fields = ['id', 'customer__name', 'tracking_code', 'customer__phone_number']
-#     list_editable = ['status', 'tracking_code']
-#     inlines = [ShippingAddressInline, OrderItemInline]
-#     readonly_fields = ['date_ordered', 'transaction_id']
-#     list_per_page = 15
 
-#     # گروه‌بندی فیلدها
-#     fieldsets = (
-#         ('اطلاعات مشتری و وضعیت', {
-#             'fields': ('customer', 'status', 'tracking_code', 'complete', 'transaction_id')
-#         }),
-#         ('اطلاعات مالی', {
-#             'fields': ('total_price', 'shipping_method', 'shipping_cost')
-#         }),
-#         ('تاریخچه', {
-#             'fields': ('date_ordered',),
-#         }),
-#     )
-
-#     # نمایش وضعیت با رنگ‌بندی
-#     def status_colored(self, obj):
-#         colors = {
-#             'pending': 'orange',
-#             'paid': 'blue',
-#             'processing': 'purple',
-#             'shipped': 'teal',
-#             'delivered': 'green',
-#             'cancelled': 'red',
-#         }
-#         color = colors.get(obj.status, 'black')
-#         return format_html(
-#             '<span style="color: white; background-color: {}; padding: 3px 10px; border-radius: 10px; font-weight: bold;">{}</span>',
-#             color,
-#             obj.get_status_display()
-#         )
-#     status_colored.short_description = 'وضعیت'
-
-#     # لینک به صفحه مشتری
-#     def customer_link(self, obj):
-#         if obj.customer:
-#             return obj.customer.name or obj.customer.phone_number
-#         return "-"
-#     customer_link.short_description = "مشتری"
-
-#     def total_price_display(self, obj):
-#         return f"{int(obj.total_price or 0):,} تومان"
-#     total_price_display.short_description = "مبلغ کل"
-
-#     def date_ordered_jalali(self, obj):
-#         return obj.date_ordered.strftime("%Y/%m/%d %H:%M")
-#     date_ordered_jalali.short_description = "تاریخ سفارش"
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
@@ -173,10 +119,10 @@ class OrderAdmin(admin.ModelAdmin):
         }),
     )
     
-    # برای اینکه وضعیت رنگی را در صفحه جزئیات (داخل سفارش) ببینیم، آن را فقط خواندنی می‌کنیم
+    
     readonly_fields = ['date_ordered', 'transaction_id', 'status_colored']
 
-    # نمایش وضعیت با رنگ‌بندی (برای استفاده در صفحه جزئیات)
+    
     def status_colored(self, obj):
         colors = {
             'pending': 'orange',

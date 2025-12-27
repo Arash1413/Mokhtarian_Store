@@ -54,8 +54,7 @@ class CustomUserCreationForm(UserCreationForm):
             'placeholder': 'نام کاربری خود را وارد کنید'
         })
 
-        # حذف متن‌های راهنمای طولانی پسورد که ظاهر را خراب می‌کنند (اختیاری)
-        # یا می‌توانید آن‌ها را ترجمه کنید. اینجا برای زیبایی متن کوتاه گذاشتیم:
+        
         self.fields['password1'].label = "رمز عبور"
         self.fields['password1'].help_text = "رمز عبور باید حداقل ۸ کاراکتر باشد و خیلی ساده نباشد."
         self.fields['password1'].widget.attrs.update({

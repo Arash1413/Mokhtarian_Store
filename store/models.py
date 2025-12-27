@@ -75,23 +75,14 @@ class Product(models.Model):
         return self.name
     
 
-# class Customer(models.Model):
-#     user = models.OneToOneField(User, on_delete=models.CASCADE)
-#     name = models.CharField(max_length=200, null=True)
-#     email = models.CharField(max_length=200, null=True)
-#     phone_number = models.CharField(max_length=15, blank=True, null=True)
 
-#     def __str__(self):
-#         return self.user.get_full_name() or self.user.username
 
 class Customer(models.Model):
     security_question = models.CharField(max_length=255, blank=True, null=True, help_text="سوال امنیتی که کاربر طرح کرده است")
     security_answer = models.CharField(max_length=255, blank=True, null=True, help_text="پاسخ هش شده سوال امنیتی")
-    # --- تغییرات کلیدی ---
-    # 1. OneToOneField را به ForeignKey تغییر دهید.
-    # 2. null=True و blank=True را اضافه کنید.
+    
     user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True)
-    # --- پایان تغییرات ---
+    
 
     name = models.CharField(max_length=200, null=True)
     email = models.CharField(max_length=200, null=True)
@@ -101,7 +92,7 @@ class Customer(models.Model):
         from django.contrib.auth.hashers import make_password
         """پاسخ را نرمال‌سازی و هش می‌کند"""
         if raw_answer:
-            # حذف فاصله‌های اضافی و تبدیل به حروف کوچک برای جلوگیری از اشتباه تایپی
+            
             clean_answer = raw_answer.strip().lower()
             self.security_answer = make_password(clean_answer)
     
@@ -114,7 +105,7 @@ class Customer(models.Model):
         return False
 
     def __str__(self):
-        # اصلاح تابع __str__ برای مدیریت کاربرانی که user ندارند
+        
         if self.user:
             return self.user.get_full_name() or self.user.username
         return self.phone_number or f"Customer {self.id}"
@@ -134,7 +125,7 @@ class Order(models.Model):
         ('mahex', 'ماهکس (پس‌کرایه)'),
         ('post', 'پست پیشتاز'),
     ]
-    # ... فیلدهای قبلی ...
+    
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, blank=True, null=True)
     date_ordered = models.DateTimeField(auto_now_add=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True)
@@ -143,10 +134,10 @@ class Order(models.Model):
     shipping_method = models.CharField(max_length=20, null=True, blank=True)
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=0, default=0)
     
-    # --- فیلدهای جدید ---
+    
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='وضعیت سفارش')
     tracking_code = models.CharField(max_length=50, null=True, blank=True, verbose_name='کد رهگیری پستی')
-    # -------------------
+    
 
     history = HistoricalRecords()
 
@@ -167,11 +158,11 @@ class Order(models.Model):
     
 
 class OrderItem(models.Model):
-    # on_delete به PROTECT تغییر کرد تا از حذف محصول و ایجاد خطا جلوگیری شود
+    
     product = models.ForeignKey(Product, on_delete=models.PROTECT) 
-    # on_delete به CASCADE تغییر کرد که منطقی‌تر است
+    
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
-    # نوع فیلد و مقدار پیش‌فرض آن بهبود یافت
+    
     quantity = models.PositiveIntegerField(default=1)
     date_added = models.DateTimeField(auto_now_add=True)
     price = models.DecimalField(max_digits=10, decimal_places=0, default=0) 
@@ -185,12 +176,12 @@ class OrderItem(models.Model):
 class ShippingAddress(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
     order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True)
-    full_name = models.CharField(max_length=200, null=True)  # <-- فیلد جدید
-    phone_number = models.CharField(max_length=20, null=True) # <-- فیلد جدید
+    full_name = models.CharField(max_length=200, null=True)  
+    phone_number = models.CharField(max_length=20, null=True) 
     address = models.CharField(max_length=200, null=False)
     city = models.CharField(max_length=200, null=False)
-    state = models.CharField(max_length=200, null=False) # استان
-    zipcode = models.CharField(max_length=200, null=False) # کد پستی
+    state = models.CharField(max_length=200, null=False) 
+    zipcode = models.CharField(max_length=200, null=False) 
     date_added = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -212,7 +203,7 @@ class ProductAttribute(models.Model):
     
 
 
-# store/models.py
+
 
 class FAQ(models.Model):
     question = models.CharField(max_length=255, verbose_name="سوال")
@@ -229,7 +220,7 @@ class FAQ(models.Model):
         return self.question
     
 
-# store/models.py
+
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Coupon(models.Model):

@@ -1,5 +1,4 @@
 
-
 from asyncio.log import logger
 from django.shortcuts import render, get_object_or_404, redirect, reverse
 from django.contrib.auth.decorators import login_required
@@ -33,25 +32,23 @@ from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
-# ==============================================================================
-# VIEWS مربوط به نمایش محصولات و صفحات عمومی
-# ==============================================================================
+
 
 def product_list(request, category_slug=None):
     category = None
     products_all = Product.objects.filter(available=True)
     latest_products = Product.objects.filter(available=True).order_by('-created')[:5]
     
-    # فیلتر بر اساس دسته‌بندی (URL)
+    
     if category_slug:
         category = get_object_or_404(Category, slug=category_slug)
         products_all = products_all.filter(category=category)
 
-    # --- بخش جدید: اعمال فیلترهای فرم ---
+    
     filter_form = ProductFilterForm(request.GET)
     
     if filter_form.is_valid():
-        # 1. فیلتر قیمت
+        
         min_p = filter_form.cleaned_data.get('min_price')
         max_p = filter_form.cleaned_data.get('max_price')
         if min_p:
@@ -59,29 +56,24 @@ def product_list(request, category_slug=None):
         if max_p:
             products_all = products_all.filter(price__lte=max_p)
             
-        # 2. فیلتر موجودی
+        
         if filter_form.cleaned_data.get('in_stock'):
             products_all = products_all.filter(stock__gt=0)
             
-        # 3. فیلتر برند
+        
         brands = filter_form.cleaned_data.get('brands')
         if brands:
             products_all = products_all.filter(brand__in=brands)
-    # -------------------------------------
-
-    # بخش‌های قبلی (پرفروش و تخفیف‌دار) - این‌ها را معمولاً فیلتر نمی‌کنیم
-    # اما اگر بخواهید فیلتر روی این‌ها هم اعمال شود، باید کدهای فیلتر را بالاتر ببرید.
-    # در اینجا فرض بر این است فیلتر فقط روی لیست اصلی پایین صفحه اعمال می‌شود.
+   
     bestsellers = Product.objects.filter(available=True, is_bestseller=True)[:4]
     discounted = Product.objects.filter(available=True, old_price__isnull=False).exclude(old_price=0)[:4]
     
-    # صفحه‌بندی (روی محصولات فیلتر شده)
+    
     paginator = Paginator(products_all, 12) 
     page_number = request.GET.get('page')
     products_paginated = paginator.get_page(page_number)
     
-    # برای نگه داشتن فیلترها هنگام عوض کردن صفحه (Pagination)
-    # یک رشته کوئری می‌سازیم (مثلا &min_price=100&brands=1)
+    
     query_params = request.GET.copy()
     if 'page' in query_params:
         del query_params['page']
@@ -93,48 +85,41 @@ def product_list(request, category_slug=None):
         'bestsellers': bestsellers, 
         'discounted': discounted,
         'latest_products': latest_products,
-        'filter_form': filter_form, # ارسال فرم به قالب
-        'url_params': url_params,   # ارسال پارامترهای URL برای صفحه‌بندی
+        'filter_form': filter_form, 
+        'url_params': url_params,   
     }
     return render(request, 'store/product/list.html', context)
 
 def product_detail(request, slug):
     product = get_object_or_404(Product, slug=slug, available=True)
     
-    # ------------------------------------------------------------------
-    # 👇👇👇 منطق هوشمند محصولات مرتبط (Smart Related Products) 👇👇👇
-    # ------------------------------------------------------------------
     
-    # 1. دریافت لیست مقادیر ویژگی‌های محصول فعلی (مثلاً: قرمز، XL، کتان)
     current_attr_values = product.attributes.values_list('value', flat=True)
 
     related_products = Product.objects.filter(
-        category=product.category,  # شرط ۱: حتماً هم‌دسته باشند
+        category=product.category,  
         available=True
     ).exclude(
-        id=product.id  # خود محصول فعلی را حذف کن
+        id=product.id  
     ).annotate(
-        # امتیازدهی ۱: آیا برند یکسان است؟ (اگر بله ۱ امتیاز، اگر نه ۰)
+        
         is_same_brand=Case(
             When(brand=product.brand, then=Value(1)),
             default=Value(0),
             output_field=IntegerField(),
         ),
-        # امتیازدهی ۲: تعداد ویژگی‌های مشترک را بشمار
-        # (هرچقدر ویژگی‌های مثل رنگ یا سایز مشابه بیشتر باشد، عدد بزرگتر می‌شود)
+        
         shared_tags_count=Count(
             'attributes', 
             filter=Q(attributes__value__in=current_attr_values)
         )
     ).order_by(
-        '-is_same_brand',       # اولویت اول: هم‌برندها بالاتر
-        '-shared_tags_count',   # اولویت دوم: بیشترین شباهت ویژگی
-        '-created'              # اولویت سوم: جدیدترین‌ها
-    )[:4] # فقط ۴ تا را برگردان
+        '-is_same_brand',       
+        '-shared_tags_count',   
+        '-created'              
+    )[:4] 
     
-    # ------------------------------------------------------------------
-
-    # کدهای قبلی (نظرات و لیست علاقه‌مندی) بدون تغییر باقی می‌مانند
+    
     reviews = Review.objects.filter(product=product, status=True)
     average_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
 
@@ -145,7 +130,7 @@ def product_detail(request, slug):
 
     context = {
         'product': product, 
-        'related_products': related_products, # حالا لیست هوشمند ارسال می‌شود
+        'related_products': related_products, 
         'reviews': reviews,
         'average_rating': average_rating,
         'review_form': ReviewForm(),
@@ -167,9 +152,7 @@ def about_page(request):
 def cart(request):
     return render(request, 'cart/detail.html', {'cart': request.cart})
 
-# ==============================================================================
-# VIEWS مربوط به ثبت نام سنتی
-# ==============================================================================
+
 
 def register(request):
     if request.user.is_authenticated:
@@ -209,9 +192,7 @@ def register(request):
     
     return render(request, 'registration/register.html', {'form': form})
 
-# ==============================================================================
-# VIEWS مربوط به فرآیند OTP
-# ==============================================================================
+
 
 def otp_page(request):
     phone = request.session.get('pending_phone')
@@ -224,10 +205,7 @@ def otp_page(request):
 def send_otp(request):
     if request.method == "POST":
         
-        # ==========================================================
-        # 👇👇👇 بخش جدید: محدودیت تعداد درخواست بر اساس IP 👇👇👇
-        # ==========================================================
-        # دریافت IP کاربر (اگر پشت پروکسی/Nginx هستید ممکن است نیاز به هدر X-Forwarded-For باشد)
+        
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
             user_ip = x_forwarded_for.split(',')[0]
@@ -237,22 +215,22 @@ def send_otp(request):
         request_count_key = f"sms_limit_{user_ip}"
         request_count = cache.get(request_count_key, 0)
 
-        if request_count >= 5:  # محدودیت ۵ بار در ساعت
+        if request_count >= 5:  
             return JsonResponse({
                 "error": "تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً یک ساعت دیگر تلاش کنید."
             }, status=429)
 
-        # افزایش شمارنده (اعتبار ۱ ساعت معادل ۳۶۰۰ ثانیه)
+        
         cache.set(request_count_key, request_count + 1, timeout=3600)
-        # ==========================================================
+        
 
 
-        # --- ادامه کدهای قبلی شما ---
+       
         phone = request.POST.get("phone")
         if not phone:
             return JsonResponse({"error": "شماره موبایل الزامی است."}, status=400)
 
-        # محدودیت ارسال مجدد برای همان شماره (کد قبلی خودتان)
+        
         if cache.get(f"otp_sent_{phone}"):
             return JsonResponse({"error": "کد قبلاً ارسال شده است. لطفاً ۲ دقیقه صبر کنید."}, status=429)
 
@@ -291,7 +269,7 @@ def send_otp(request):
     return JsonResponse({"error": "درخواست نامعتبر."}, status=405)
 
 
-# @csrf_exempt
+
 def verify_otp(request):
     if request.method == "POST":
         phone = request.POST.get("phone") or request.session.get('pending_phone')
@@ -302,7 +280,7 @@ def verify_otp(request):
 
         saved_code = cache.get(f"otp_{phone}")
         
-        # بررسی صحت کد OTP
+        
         if saved_code and str(saved_code) == str(code):
             cache.delete(f"otp_{phone}")
             
@@ -320,46 +298,44 @@ def verify_otp(request):
                 with transaction.atomic():
                     full_name = shipping_data.get('full_name', f"کاربر {phone}")
                     
-                    # ==========================================================
-                    # بخش ۱: همگام‌سازی کاربر (User Sync Logic) ✅
-                    # ==========================================================
+                    
                     customer = None
                     
                     if request.user.is_authenticated:
-                        # اولویت با کاربر لاگین شده است
+                        
                         customer = Customer.objects.filter(user=request.user).first()
                         
                         if customer:
-                            # اگر کاربر پروفایل دارد و شماره جدیدی وریفای کرده، آپدیت کن (اگر تکراری نباشد)
+                            
                             if customer.phone_number != phone:
                                 if not Customer.objects.filter(phone_number=phone).exclude(id=customer.id).exists():
                                     customer.phone_number = phone
                                     customer.save()
                             
-                            # اگر نام نداشت، نام فرم را ست کن
+                            
                             if not customer.name:
                                 customer.name = full_name
                                 customer.save()
                                 
                         else:
-                            # کاربر لاگین است اما پروفایل ندارد (شاید قبلا به صورت مهمان با این شماره خرید کرده)
+                            
                             existing_guest = Customer.objects.filter(phone_number=phone, user__isnull=True).first()
                             
                             if existing_guest:
-                                # اتصال اکانت مهمان به اکانت کاربری
+                                
                                 customer = existing_guest
                                 customer.user = request.user
                                 customer.name = full_name
                                 customer.save()
                             else:
-                                # ساخت مشتری جدید متصل به یوزر
+                                
                                 customer = Customer.objects.create(
                                     user=request.user,
                                     phone_number=phone,
                                     name=full_name
                                 )
                     else:
-                        # کاربر مهمان است
+                        
                         customer, created = Customer.objects.get_or_create(
                             phone_number=phone,
                             defaults={'name': full_name}
@@ -367,13 +343,11 @@ def verify_otp(request):
                         if not created and not customer.name:
                             customer.name = full_name
                             customer.save()
-                    # ==========================================================
-
-                    # بخش ۲: محاسبات مالی و هزینه ارسال
+                    
                     shipping_method = shipping_data.get('shipping_method', 'mahex')
                     total_weight = cart.get_total_weight()
                     
-                    # دریافت مبلغ کل سبد خرید (اگر متد get_total_price را آپدیت کرده باشید، تخفیف لحاظ شده است)
+                    
                     cart_total_price = cart.get_total_price()
                     
                     final_shipping_cost = 0
@@ -382,7 +356,7 @@ def verify_otp(request):
                     
                     final_total_price = float(cart_total_price) + float(final_shipping_cost)
 
-                    # بخش ۳: ایجاد سفارش در دیتابیس
+                   
                     order = Order.objects.create(
                         customer=customer, 
                         complete=False, 
@@ -392,7 +366,7 @@ def verify_otp(request):
                         status='pending'
                     )
 
-                    # ثبت آیتم‌های سفارش
+                    
                     for item in cart:
                         OrderItem.objects.create(
                             order=order,
@@ -401,7 +375,7 @@ def verify_otp(request):
                             price=item['price']
                         )
 
-                    # ثبت آدرس ارسال
+                    
                     ShippingAddress.objects.create(
                         customer=customer,
                         order=order,
@@ -413,7 +387,7 @@ def verify_otp(request):
                         zipcode=shipping_data.get('zipcode')
                     )
 
-                # بخش ۴: اتصال به درگاه پرداخت
+                
                 amount_toman = int(final_total_price)
                 callback_url = request.build_absolute_uri(reverse('store:payment_verify'))
                 
@@ -442,10 +416,10 @@ def verify_otp(request):
                     order.transaction_id = transid
                     order.save()
                     
-                    # پاک کردن اطلاعات موقت سشن
+                    
                     del request.session['shipping_data']
                     
-                    # ✅ اگر سیستم کد تخفیف را پیاده کرده‌اید، این خط را اضافه کنید:
+                    
                     request.session['coupon_id'] = None 
                     
                     payment_url = f"https://panel.aqayepardakht.ir/startpay/{transid}"
@@ -455,7 +429,7 @@ def verify_otp(request):
                         "redirect_url": payment_url
                     })
                 else:
-                    # در صورت خطای درگاه، سفارش را کنسل می‌کنیم (حذف نمی‌کنیم)
+                    
                     order.status = 'cancelled'
                     order.save()
                     
@@ -466,7 +440,7 @@ def verify_otp(request):
                     })
 
             except Exception as e:
-                # مدیریت خطاهای غیرمنتظره
+                
                 if 'order' in locals() and order.id:
                     order.status = 'cancelled'
                     order.save()
@@ -482,9 +456,7 @@ def verify_otp(request):
     
     return JsonResponse({"error": "درخواست نامعتبر."}, status=405)
 
-# ==============================================================================
-# VIEWS مربوط به فرآیند خرید و پرداخت
-# ==============================================================================
+
 
 def checkout(request):
     cart = request.cart
@@ -527,21 +499,20 @@ def payment_verify(request):
         return render(request, 'store/payment_result.html', {'error': 'تراکنش نامعتبر است.'})
 
     try:
-        # فقط سفارش‌هایی که هنوز تکمیل نشده‌اند را بگیر
+        
         order = Order.objects.get(transaction_id=transid, complete=False)
     except Order.DoesNotExist:
-        # اگر سفارش قبلاً تکمیل شده باشد
+        
         if Order.objects.filter(transaction_id=transid, complete=True).exists():
             order_done = Order.objects.get(transaction_id=transid)
             return render(request, 'store/payment_result.html', {'order': order_done, 'success': True, 'already_verified': True})
         logger.error(f"Order with transid {transid} not found") 
         return render(request, 'store/payment_result.html', {'error': 'سفارش یافت نشد.'})
 
-    # محاسبه مبلغ مورد انتظار به ریال
-    # نکته: بهتر است از int روی Decimal استفاده کنید تا دقت حفظ شود، اما طبق کد قبلی شما float هم کار می‌کند
+    
     expected_amount_rials = int(order.total_price * 10)
 
-    # آماده‌سازی داده‌ها برای تایید نهایی
+    
     verify_data = {
         'pin': settings.MR_PARDDAKHT_API_KEY, 
         'amount': expected_amount_rials, 
@@ -560,30 +531,24 @@ def payment_verify(request):
         logger.info(f"Payment verify response: {response_json}")
         
         if response_json.get('status') == 'success':
-            # ==================================================================
-            # اصلاحیه امنیتی: بررسی تطابق مبلغ (Amount Validation) 🛡️
-            # ==================================================================
-            # درگاه معمولاً مبلغ تایید شده را در پاسخ برمی‌گرداند.
-            # اگر کلید amount در پاسخ نبود، همان مبلغ ارسالی را فرض می‌گیریم (بسته به مستندات درگاه)
+           
             paid_amount = int(response_json.get('amount', expected_amount_rials))
             
             if paid_amount != expected_amount_rials:
-                # اگر مبلغ پرداخت شده کمتر یا بیشتر از مبلغ سفارش بود
+                
                 logger.critical(f"Payment Fraud Attempt! Order: {order.id}, Expected: {expected_amount_rials}, Paid: {paid_amount}")
                 
-                order.status = 'cancelled' # یا یک وضعیت خاص مثل 'fraud_check'
+                order.status = 'cancelled' 
                 order.save()
                 
                 return render(request, 'store/payment_result.html', {
                     'error': 'مبلغ پرداخت شده با مبلغ سفارش مغایرت دارد. تراکنش لغو شد.'
                 })
-            # ==================================================================
-
-            # --- پرداخت و مبلغ تایید شد ---
+            
             order.complete = True
             order.status = 'paid'
             
-            # کسر موجودی انبار (از اصلاحات قبلی)
+            
             for item in order.orderitem_set.all():
                 product = item.product
                 if product.stock >= item.quantity:
@@ -601,18 +566,16 @@ def payment_verify(request):
             except Exception as e:
                 logger.error(f"Failed to send telegram notification: {e}")
             
-            # پاک‌سازی
+            
             request.cart.clear()
             request.session.pop('phone_verified', None)
             request.session.pop('next_url', None)
             
             return render(request, 'store/payment_result.html', {'order': order, 'success': True})
         else:
-            # پرداخت ناموفق
             error_message = response_json.get('message', 'تراکنش توسط درگاه تأیید نشد.')
             logger.error(f"Payment verification failed: {response_json}")
             
-            # تغییر وضعیت به جای حذف (از اصلاحات قبلی)
             order.status = 'cancelled'
             order.save()
             
@@ -623,9 +586,7 @@ def payment_verify(request):
         error_message = 'خطا در ارتباط با درگاه. لطفاً با پشتیبانی تماس بگیرید.'
         return render(request, 'store/payment_result.html', {'error': error_message})
 
-# ==============================================================================
-# VIEWS مربوط به پروفایل کاربران
-# ==============================================================================
+
 
 @login_required(login_url='login')
 def profile(request):
@@ -660,13 +621,11 @@ def forgot_password_request(request):
         form = UsernameRecoveryForm(request.POST)
         if form.is_valid():
             identifier = form.cleaned_data['identifier']
-            # جستجو بر اساس نام کاربری یا موبایل
             customer = Customer.objects.filter(
                 Q(user__username=identifier) | Q(phone_number=identifier)
             ).first()
 
             if customer and customer.security_question and customer.security_answer:
-                # ذخیره ID مشتری در سشن برای مرحله بعد
                 request.session['reset_customer_id'] = customer.id
                 return redirect('store:verify_security_question')
             else:
@@ -689,7 +648,6 @@ def verify_security_question(request):
         if form.is_valid():
             answer = form.cleaned_data['answer']
             if customer.check_security_answer(answer):
-                # پاسخ صحیح است، اجازه ورود به مرحله تغییر رمز
                 request.session['security_verified'] = True
                 return redirect('store:reset_password_confirm')
             else:
@@ -756,18 +714,13 @@ def coupon_apply(request):
 def submit_review(request, product_id):
     if request.method == 'POST':
         try:
-            # بررسی لاگین بودن کاربر
             if not request.user.is_authenticated:
                 messages.error(request, "برای ثبت نظر ابتدا باید وارد حساب کاربری خود شوید.")
                 return redirect('login')
 
             product = get_object_or_404(Product, id=product_id)
             
-            # بررسی اینکه آیا کاربر قبلا نظر داده یا نه (اختیاری)
-            # اگر می‌خواهید هر کاربر فقط یک نظر بدهد، کامنت زیر را فعال کنید:
-            # if Review.objects.filter(user=request.user, product=product).exists():
-            # messages.warning(request, "شما قبلاً برای این محصول نظر ثبت کرده‌اید.")
-            #     return redirect(product.get_absolute_url())
+            
 
             form = ReviewForm(request.POST)
             if form.is_valid():
@@ -796,19 +749,15 @@ def submit_review(request, product_id):
 def toggle_wishlist(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     
-    # دریافت یا ایجاد لیست برای کاربر
     wishlist, created = Wishlist.objects.get_or_create(user=request.user)
     
     if product in wishlist.products.all():
-        # اگر محصول در لیست بود، حذفش کن
         wishlist.products.remove(product)
         messages.info(request, f"{product.name} از لیست علاقه‌مندی‌ها حذف شد.")
     else:
-        # اگر نبود، اضافه‌اش کن
         wishlist.products.add(product)
         messages.success(request, f"{product.name} به لیست علاقه‌مندی‌ها اضافه شد.")
     
-    # بازگشت به همان صفحه‌ای که کاربر در آن بوده (مثلا صفحه محصول)
     return redirect(request.META.get('HTTP_REFERER', 'store:product_list'))
 
 @login_required(login_url='login')
