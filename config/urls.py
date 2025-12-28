@@ -21,6 +21,7 @@ from django.conf.urls.static import static # import کنید
 from django.views.generic.base import TemplateView # برای robots.txt
 from django.contrib.sitemaps.views import sitemap
 from store.sitemaps import ProductSitemap, CategorySitemap, StaticViewSitemap
+from store.views import CustomLoginView
 
 from django.contrib.auth import views as auth_views
 from store import views as store_views
@@ -33,7 +34,7 @@ sitemaps = {
 
 urlpatterns = [
     path('mokhtarian-panel/', admin.site.urls),
-    path("login/", auth_views.LoginView.as_view(template_name="registration/login.html"), name="login"),
+    path("login/", CustomLoginView.as_view(), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path('register/', store_views.register, name='register'), 
 

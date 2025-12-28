@@ -33,6 +33,17 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ['mokhtarianshop.ir', 'www.mokhtarianshop.ir', '185.231.180.222', '127.0.0.1', 'localhost']
 
+# settings.py
+
+# نشست کاربر با بستن مرورگر منقضی نشود
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# نشست کاربر تا ۲ هفته معتبر بماند (به ثانیه)
+SESSION_COOKIE_AGE = 1209600 
+
+# اگر کاربر فیلدها را تغییر داد، نشست بروزرسانی شود
+SESSION_SAVE_EVERY_REQUEST = True
+
 
 # Application definition
 

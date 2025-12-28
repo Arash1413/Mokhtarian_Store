@@ -6,6 +6,8 @@ from django import forms
 from .models import ShippingAddress
 from .models import ShippingAddress, Customer, Brand
 from .models import Review
+from django.contrib.auth.forms import AuthenticationForm
+
 
 
 
@@ -16,7 +18,8 @@ class CustomUserCreationForm(UserCreationForm):
         widget=forms.TextInput(attrs={
             'class': 'form-control', 
             'placeholder': '0912xxxxxxx',
-            'style': 'direction: ltr; text-align: left;' # شماره موبایل چپ‌چین باشد بهتر است
+            'style': 'direction: ltr; text-align: left;',
+            'autocomplete': 'tel' # کمک به مرورگر برای تشخیص شماره تلفن
         })
     )
     security_question = forms.CharField(
@@ -24,7 +27,7 @@ class CustomUserCreationForm(UserCreationForm):
         max_length=255,
         widget=forms.TextInput(attrs={
             'class': 'form-control', 
-            'placeholder': 'مثلاً: نام اولین مدرسه من؟ یا رنگ مورد علاقه؟'
+            'placeholder': 'مثلاً: نام اولین مدرسه من؟'
         })
     )
     
@@ -33,7 +36,7 @@ class CustomUserCreationForm(UserCreationForm):
         max_length=255,
         widget=forms.TextInput(attrs={
             'class': 'form-control', 
-            'placeholder': 'پاسخ را وارد کنید (این پاسخ محرمانه می‌ماند)'
+            'placeholder': 'پاسخ را وارد کنید'
         })
     )
 
@@ -47,25 +50,27 @@ class CustomUserCreationForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # فارسی سازی لیبل‌ها و متون راهنما
+        # فارسی سازی و اضافه کردن قابلیت ذخیره پسورد (autocomplete)
         self.fields['username'].label = "نام کاربری"
         self.fields['username'].widget.attrs.update({
             'class': 'form-control', 
-            'placeholder': 'نام کاربری خود را وارد کنید'
+            'placeholder': 'نام کاربری خود را وارد کنید',
+            'autocomplete': 'username' # بسیار مهم برای ذخیره پسورد
         })
 
-        
         self.fields['password1'].label = "رمز عبور"
-        self.fields['password1'].help_text = "رمز عبور باید حداقل ۸ کاراکتر باشد و خیلی ساده نباشد."
+        self.fields['password1'].help_text = "رمز عبور باید حداقل ۸ کاراکتر باشد."
         self.fields['password1'].widget.attrs.update({
             'class': 'form-control', 
-            'placeholder': '********'
+            'placeholder': '********',
+            'autocomplete': 'new-password' # نشان‌دهنده ایجاد رمز عبور جدید
         })
 
         self.fields['password2'].label = "تکرار رمز عبور"
         self.fields['password2'].widget.attrs.update({
             'class': 'form-control', 
-            'placeholder': '********'
+            'placeholder': '********',
+            'autocomplete': 'new-password'
         })
 
     def clean_phone_number(self):
@@ -75,7 +80,7 @@ class CustomUserCreationForm(UserCreationForm):
         if not (len(phone) == 11 and phone.startswith('09')):
             raise forms.ValidationError("فرمت شماره موبایل صحیح نیست.")
         return phone
-
+    
 class ShippingForm(forms.ModelForm):
     SHIPPING_CHOICES = [
         ('mahex', 'ماهکس (پس‌کرایه - هزینه درب منزل)'),
@@ -156,3 +161,15 @@ class ProductFilterForm(forms.Form):
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
         label="برندها"
     )
+
+
+
+class CustomAuthenticationForm(AuthenticationForm):
+    remember_me = forms.BooleanField(required=False, label='مرا به خاطر بسپار')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # استایل‌دهی به اینپوت‌ها طبق قالب شما
+        self.fields['username'].widget.attrs.update({'class': 'form-control form-control-lg', 'autocomplete': 'username'})
+        self.fields['password'].widget.attrs.update({'class': 'form-control form-control-lg', 'autocomplete': 'current-password'})
+        self.fields['remember_me'].widget.attrs.update({'class': 'form-check-input'})

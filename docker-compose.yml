@@ -9,6 +9,8 @@ services:
       - POSTGRES_DB=mokhtarian_shop_db
       - POSTGRES_USER=mokhtarian_admin
       - POSTGRES_PASSWORD=arash.m.82
+    ports:
+      - "5432:5432"  # <--- این خط را حتماً اضافه کنید
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

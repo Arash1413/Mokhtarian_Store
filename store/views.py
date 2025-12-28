@@ -29,6 +29,8 @@ from django.db.models import Count, Q, Case, When, Value, IntegerField
 from django.core.cache import cache
 import secrets
 from django.db import transaction
+from .forms import CustomAuthenticationForm
+from django.contrib.auth.views import LoginView
 
 logger = logging.getLogger(__name__)
 
@@ -765,5 +767,23 @@ def wishlist_page(request):
     wishlist, created = Wishlist.objects.get_or_create(user=request.user)
     products = wishlist.products.all()
     return render(request, 'store/wishlist.html', {'products': products})
+
+
+class CustomLoginView(LoginView):
+    form_class = CustomAuthenticationForm
+    template_name = 'registration/login.html'
+
+    def form_valid(self, form):
+        remember_me = form.cleaned_data.get('remember_me')
+        
+        if not remember_me:
+            # اگر تیک زده نشده بود: با بستن مرورگر نشست تمام شود
+            self.request.session.set_expiry(0)
+            self.request.session.modified = True
+        else:
+            # اگر تیک زده شده بود: از مقدار SESSION_COOKIE_AGE در settings.py استفاده کن (مثلا ۲ هفته)
+            self.request.session.set_expiry(None) # یا زمان مشخص به ثانیه
+            
+        return super().form_valid(form)
 
 
