@@ -289,6 +289,18 @@
         background-color: #25D366 !important;
         border-color: #25D366 !important;
     }
+
+    /* استایل نمادهای اعتماد*/
+    .trust-logo img {
+        filter: grayscale(20%); /* کمی خاکستری برای هماهنگی با تم*/
+    }
+    .trust-logo img:hover {
+        filter: grayscale(0%);
+        transform: translateY(-5px); /* افکت حرکت به بالا در هاور*/
+    }
+    .bg-light.rounded-4 {
+        background-color: #f8f9fa !important;
+    }
         </style>
         
     </head>
@@ -379,49 +391,74 @@
         </main>
 
         <!-- ======================= فوتر تمام‌عرض ======================= -->
-        <footer class="footer mt-auto py-5">
-          <div class="container-fluid px-4 px-lg-5">
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <h5>فروشگاه مختاریان</h5>
-                <p class="text-muted">
-                    آدرس کامل فروشگاه: چهارمحال و بختیاری شهرکرد فردوسی جنوبی نرسیده به ترمینال آزادی <br>
-                    ساعات کاری: شنبه تا پنج‌شنبه 8 صبح تا 7 بعدازظهر
+        <footer class="footer mt-auto py-5 border-top bg-white">
+    <div class="container-fluid px-4 px-lg-5">
+        <div class="row g-4">
+            
+            <div class="col-md-4 mb-3">
+                <h5 class="fw-bold mb-3">فروشگاه مختاریان</h5>
+                <p class="text-muted small" style="line-height: 2;">
+                    <i class="bi bi-geo-alt-fill text-danger"></i> آدرس کامل فروشگاه: چهارمحال و بختیاری، شهرکرد، فردوسی جنوبی، نرسیده به ترمینال آزادی <br>
+                    <i class="bi bi-clock-fill text-primary"></i> ساعات کاری: شنبه تا پنج‌شنبه ۸ صبح تا ۷ بعدازظهر
                 </p>
-              </div>
+            </div>
 
-              <div class="col-md-3 mb-3">
-                <h5>پشتیبانی</h5>
+            
+            <div class="col-md-2 mb-3">
+                <h5 class="fw-bold mb-3">پشتیبانی</h5>
                 <ul class="nav flex-column">
-                  <li class="nav-item mb-2 text-muted">09162243093</li>
-                  
+                    <li class="nav-item mb-2 text-muted small">
+                        <i class="bi bi-telephone-fill me-1"></i> 09162243093
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a href="{% url 'store:about_page' %}" class="text-muted text-decoration-none small">تماس با ما</a>
+                    </li>
                 </ul>
-              </div>
+            </div>
 
-              <div class="col-md-5 mb-3">
-                <h5>با ما در ارتباط باشید</h5>
-                <div class="d-flex flex-nowrap gap-2 mt-2">
-    <!-- دکمه اینستاگرام با رنگ برند -->
-    <a href="https://www.instagram.com/mokhtarian_store/" target="_blank" class="btn btn-instagram-custom shadow-sm text-white px-3">
-        <i class="bi bi-instagram me-1"></i> اینستاگرام
-    </a>
+            
+            <div class="col-md-3 mb-3 text-center text-md-start">
+                <h5 class="fw-bold mb-3">با ما در ارتباط باشید</h5>
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    
+                    <a href="https://www.instagram.com/mokhtarian_store/" target="_blank" class="btn btn-instagram-custom shadow-sm text-white px-3 py-2 btn-sm">
+                        <i class="bi bi-instagram me-1"></i> اینستاگرام
+                    </a>
 
-    <!-- دکمه واتساپ -->
-    <a href="https://wa.me/qr/ET2NZGXDLEPOA1" target="_blank" class="btn btn-success shadow-sm text-white px-3">
-        <i class="bi bi-whatsapp me-1"></i> واتساپ
-    </a>
-</div>
-              </div>
-              <div class="col-md-4 mb-4">
-                <h5 class="fw-bold mb-3">محل فروشگاه</h5>
-                <div id="map"></div> 
+                    
+                    <a href="https://wa.me/qr/ET2NZGXDLEPOA1" target="_blank" class="btn btn-success shadow-sm text-white px-3 py-2 btn-sm" style="background-color: #25D366; border-color: #25D366;">
+                        <i class="bi bi-whatsapp me-1"></i> واتساپ
+                    </a>
+                </div>
+
+                
+                <h6 class="fw-bold mb-3 small text-muted">مجوزها و پرداخت امن</h6>
+                <div class="d-flex gap-3 align-items-center bg-light p-2 rounded border border-opacity-10 justify-content-center justify-content-md-start">
+                    
+                    <a onclick="window.open('https://panel.aqayepardakht.ir/trustGateway/72207',null,'width=400, height=600, scrollbars=no, resizable=no')" href="javascript:void(0)" referrerpolicy="strict-origin-when-cross-origin" title="پرداخت امن آقای پرداخت">
+                        <img src="https://cdn.aqayepardakht.ir/trustlogo/1.svg" alt="آقای پرداخت" style="height: 50px; cursor: pointer;">
+                    </a>
+
+                    
+                    <a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=695006&Code=QJ46xOo5zqY0xDv75ZcyOFf8MD9rOAwp'>
+                        <img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=695006&Code=QJ46xOo5zqY0xDv75ZcyOFf8MD9rOAwp' alt='اینماد' style='cursor:pointer; height: 50px;' code='QJ46xOo5zqY0xDv75ZcyOFf8MD9rOAwp'>
+                    </a>
+                </div>
             </div>
+
+            
+            <div class="col-md-3 mb-4">
+                <h5 class="fw-bold mb-3">محل فروشگاه (کلیک برای مسیریابی)</h5>
+                <div id="map" class="shadow-sm border"></div> 
             </div>
-            <div class="d-flex justify-content-center py-4 my-4 border-top">
-              <p>© 2024 Arash Mokhtarian. All rights reserved.</p>
-            </div>
-          </div>
-        </footer>
+        </div>
+
+        
+        <div class="d-flex justify-content-center py-4 my-4 border-top small text-muted">
+            <p>© 2024 Arash Mokhtarian. All rights reserved.</p>
+        </div>
+    </div>
+</footer>
 
         <!-- ======================= شروع بخش جدید: ویجت سوالات متداول ======================= -->
         <!-- دکمه شناور -->

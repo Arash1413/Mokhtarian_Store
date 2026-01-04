@@ -22,6 +22,8 @@ from django.views.generic.base import TemplateView # برای robots.txt
 from django.contrib.sitemaps.views import sitemap
 from store.sitemaps import ProductSitemap, CategorySitemap, StaticViewSitemap
 from store.views import CustomLoginView
+from django.views.generic.base import TemplateView
+from django.http import HttpResponse
 
 from django.contrib.auth import views as auth_views
 from store import views as store_views
@@ -47,6 +49,10 @@ urlpatterns = [
     path(
         "robots.txt",
         TemplateView.as_view(template_name="store/robots.txt", content_type="text/plain"),
+    ),
+    path(
+        "57549540.txt",
+        TemplateView.as_view(template_name="57549540.txt", content_type="text/plain"),
     ),
 ]
 

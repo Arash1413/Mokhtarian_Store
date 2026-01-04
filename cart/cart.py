@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django.conf import settings
-from store.models import Product
+from store.models import Product, Coupon
 
 class Cart:
     def __init__(self, request):
@@ -50,7 +50,7 @@ class Cart:
         """
         product_ids = self.cart.keys()
         products = Product.objects.filter(id__in=product_ids)
-        cart = self.cart.copy()
+        cart = {k: v.copy() for k, v in self.cart.items()}
 
         for product in products:
             item = cart[str(product.id)]
