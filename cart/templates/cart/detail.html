@@ -1,5 +1,6 @@
 {% extends "store/base.html" %}
 {% load static %}
+{% load humanize %}
 
 {% block content %}
 <div class="container-lg my-5">
@@ -55,12 +56,12 @@
                             <div class="col-md-3 text-start">
                                 <!-- ID اضافه شد برای آپدیت قیمت کل آیتم -->
                                 <span class="fw-bold fs-5 d-block">
-                                    <span id="item-total-{{ product.id }}">{{ item.total_price|floatformat:0 }}</span> تومان
+                                    <span id="item-total-{{ product.id }}">{{ item.total_price|floatformat:0|intcomma:False }}</span> تومان
                                 </span>
                                 
                                 <!-- ID اضافه شد برای آپدیت قیمت واحد -->
                                 <span class="text-muted small">
-                                    <span id="item-price-{{ product.id }}">{{ item.price|floatformat:0 }}</span> تومان (واحد)
+                                    <span id="item-price-{{ product.id }}">{{ item.price|floatformat:0|intcomma:False }}</span> تومان (واحد)
                                 </span>
 
                                 <!-- بخش وضعیت عمده (ID اضافه شد) -->
@@ -143,7 +144,7 @@
                         <span class="text-muted">جمع کل</span>
                         <span class="fw-bold">
                             <!-- اگر متد get_total_price_before_discount را در cart.py نساختید، فعلا همان get_total_price را بگذارید -->
-                            {{ cart.get_total_price_before_discount|default:cart.get_total_price|floatformat:0 }} <small>تومان</small>
+                            {{ cart.get_total_price_before_discount|default:cart.get_total_price|floatformat:0|intcomma:False }} <small>تومان</small>
                         </span>
                     </div>
 
@@ -154,7 +155,7 @@
                             <i class="bi bi-tag-fill me-1"></i> تخفیف ({{ cart.coupon.code }})
                         </span>
                         <span class="fw-bold">
-                            -{{ cart.get_discount|floatformat:0 }} <small>تومان</small>
+                            -{{ cart.get_discount|floatformat:0|intcomma:False }} <small>تومان</small>
                         </span>
                     </div>
                     {% endif %}
@@ -165,7 +166,7 @@
                         <span class="fs-5 fw-bold text-dark">مبلغ قابل پرداخت</span>
                         <span class="fs-4 fw-bold text-success">
                             <!-- اینجا قیمت نهایی (با کسر تخفیف) نمایش داده می‌شود -->
-                            <span id="cart-total">{{ cart.get_total_price|floatformat:0 }}</span> <small class="fs-6">تومان</small>
+                            <span id="cart-total">{{ cart.get_total_price|floatformat:0|intcomma:False }}</span> <small class="fs-6">تومان</small>
                         </span>
                     </div>
                     

@@ -1,4 +1,5 @@
 {% load static %}
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
     <head>
@@ -215,14 +216,9 @@
         header form[role="search"] {
             width: 300px; /* یا هر عرض دیگری که مناسب می‌دانید، مثلا 250px */
         }
-        .card-product {
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
+  
 
-        .card-product:hover {
-            transform: translateY(-5px); /* کارت را ۵ پیکسل به بالا حرکت می‌دهد */
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; /* یک سایه برجسته اضافه می‌کند */
-        }
+        
 
         .search-box {
             transition: all 0.3s ease;
@@ -300,6 +296,74 @@
     }
     .bg-light.rounded-4 {
         background-color: #f8f9fa !important;
+    }
+     /* استایل کارت محصول جمع‌وجور*/
+    .card-product {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border: 1px solid #f0f0f0;
+        border-radius: 12px;
+        transition: 0.3s;
+        max-width: 250px; /* تنظیم عرض بر اساس کارت مورد نظر شما*/
+        margin: 0 auto;
+    }
+
+    .card-product:hover {
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+        transform: translateY(-5px);
+    }
+
+    /* کانتینر تصویر با ارتفاع ثابت*/
+    .product-img-container {
+        height: 180px; /* ارتفاع ثابت برای بخش عکس*/
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        overflow: hidden;
+    }
+
+    .product-img-container img {
+        max-height: 100%;
+        max-width: 100%;
+        object-fit: contain; /* عکس کشیده نمی‌شود و داخل کادر جا می‌گیرد*/
+    }
+
+    /* بخش بدنه کارت (متن‌ها)*/
+    .card-product .card-body {
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        flex-grow: 1;
+        text-align: center;
+    }
+
+    /* محدود کردن نام محصول به یک خط برای جلوگیری از تغییر ارتفاع*/
+    .product-title {
+        font-size: 0.95rem;
+        font-weight: bold;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .product-price {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--bs-primary);
+        margin-bottom: 15px;
+    }
+
+    .btn-add-cart {
+        border-radius: 8px;
+        font-size: 0.9rem;
+        padding: 8px;
     }
         </style>
         

@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',    # این خط باید باشد
     'django.contrib.sitemaps', # این خط را اضافه کنید
+    'django.contrib.humanize',
     
 
     'store',

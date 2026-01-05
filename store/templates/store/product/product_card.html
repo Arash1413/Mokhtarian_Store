@@ -1,36 +1,96 @@
 <!-- store/templates/store/product/product_card.html -->
 {% load static %}
+{% load humanize %} <!-- برای سه رقم سه رقم کردن قیمت -->
 
-<div class="card h-100 shadow-sm card-product">
+<div class="card h-100 shadow-sm card-product border-0">
+    <!-- نشان تخفیف -->
     {% if product.old_price %}
-        <div class="badge bg-danger text-white position-absolute" style="top: 0.5rem; right: 0.5rem">تخفیف</div>
+        <div class="badge bg-danger text-white position-absolute" style="top: 0.5rem; right: 0.5rem; z-index: 10; font-size: 0.7rem;">تخفیف</div>
     {% endif %}
     
-    <a href="{{ product.get_absolute_url }}">
+    <!-- بخش تصویر با ارتفاع ثابت برای جلوگیری از دراز شدن کارت -->
+    <a href="{{ product.get_absolute_url }}" class="product-img-container">
         {% if product.image %}
-            <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}" />
+            <img src="{{ product.image.url }}" alt="{{ product.name }}" />
         {% else %}
-            <!-- مسیر صحیح و کلاس صحیح -->
-            <img class="card-img-top" src="{% static 'images/placeholder.png' %}" alt="{{ product.name }}" />
+            <img src="{% static 'images/placeholder.png' %}" alt="{{ product.name }}" />
         {% endif %} 
     </a>
     
-    <div class="card-body p-4">
+    <!-- بدنه کارت -->
+    <div class="card-body p-3 d-flex flex-column justify-content-between">
         <div class="text-center">
-            <h5 class="fw-bolder">{{ product.name }}</h5>
-            {% if product.old_price %}
-                <span class="text-muted text-decoration-line-through">{{ product.old_price|floatformat:0 }} تومان</span><br>
-            {% endif %}
-            {{ product.price|floatformat:0 }} تومان
+            <!-- عنوان محصول (محدود شده به یک یا دو خط برای حفظ نظم) -->
+            <h6 class="product-title fw-bold mb-2">{{ product.name }}</h6>
+            
+            <div class="price-box">
+                {% if product.old_price %}
+                    <span class="text-muted text-decoration-line-through small d-block" style="font-size: 0.75rem;">
+                        {{ product.old_price|floatformat:0|intcomma:False }} تومان
+                    </span>
+                {% endif %}
+                <span class="fw-bolder text-primary">
+                    {{ product.price|floatformat:0|intcomma:False }} <small style="font-size: 0.7rem;">تومان</small>
+                </span>
+            </div>
         </div>
     </div>
     
-    <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+    <!-- فوتر کارت (دکمه خرید) -->
+    <div class="card-footer p-3 pt-0 border-top-0 bg-transparent">
         <div class="text-center">
             <form action="{% url 'cart:cart_add' product.id %}" method="post">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-outline-dark mt-auto">افزودن به سبد</button>
+                <button type="submit" class="btn btn-outline-dark btn-sm w-100 rounded-pill py-1">
+                    <i class="bi bi-cart-plus"></i> افزودن به سبد
+                </button>
             </form>
         </div>
     </div>
 </div>
+
+<style>
+    /* استایل اختصاصی برای یکسان سازی تمام کارت ها */
+    .card-product {
+        transition: transform 0.2s ease-in-out;
+        max-width: 250px; /* جلوگیری از عریض شدن بیش از حد */
+        margin: 0 auto;
+    }
+
+    .card-product:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+
+    /* کانتینر عکس: مهم ترین بخش برای اندازه یکسان */
+    .product-img-container {
+        height: 180px; /* ارتفاع دقیقاً مطابق کارت خودکار کیان شما */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .product-img-container img {
+        max-height: 100%;
+        max-width: 100%;
+        object-fit: contain; /* جلوگیری از کشیده شدن عکس */
+    }
+
+    .product-title {
+        font-size: 0.85rem;
+        color: #333;
+        display: -webkit-box;
+        -webkit-line-clamp: 2; /* حداکثر در ۲ خط نمایش داده شود */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        height: 2.4rem; /* ارتفاع ثابت برای متن عنوان */
+        line-height: 1.2;
+    }
+
+    .price-box {
+        margin-top: 5px;
+    }
+</style>
