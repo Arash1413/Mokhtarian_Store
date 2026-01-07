@@ -3619,21 +3619,19 @@ textarea.form-control-lg {
 }
 
 .nav-link {
-  display: block;
-  padding: var(--bs-nav-link-padding-y) var(--bs-nav-link-padding-x);
-  font-size: var(--bs-nav-link-font-size);
-  font-weight: var(--bs-nav-link-font-weight);
-  color: var(--bs-nav-link-color);
-  text-decoration: none;
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
-}
+        color: #555 !important;
+        font-weight: 500;
+        font-size: 0.95rem;
+        padding: 10px 15px !important;
+        transition: 0.3s;
+    }
 @media (prefers-reduced-motion: reduce) {
   .nav-link {
     transition: none;
   }
 }
 .nav-link:hover, .nav-link:focus {
-  color: var(--bs-nav-link-hover-color);
+   color: var(--accent-color) !important;
 }
 .nav-link.disabled {
   color: var(--bs-nav-link-disabled-color);
@@ -3766,6 +3764,9 @@ textarea.form-control-lg {
   justify-content: space-between;
 }
 .navbar-brand {
+  line-height: 1;
+  display: flex !important;
+  align-items: center !important;
   padding-top: var(--bs-navbar-brand-padding-y);
   padding-bottom: var(--bs-navbar-brand-padding-y);
   margin-right: var(--bs-navbar-brand-margin-end);
@@ -3809,12 +3810,17 @@ textarea.form-control-lg {
 .navbar-text a:focus {
   color: var(--bs-navbar-active-color);
 }
+.gold-heart {
+        color: #dda15e !important; /* رنگ طلایی تم شما*/
+        filter: drop-shadow(0 0 1px rgba(0,0,0,0.1)); /* کمی سایه برای جلوه بیشتر*/
+        margin-left: 5px; /* فاصله از متن*/
+    }
 
-.navbar-collapse {
-  flex-basis: 100%;
-  flex-grow: 1;
-  align-items: center;
-}
+ .navbar-collapse {
+        justify-content: flex-start; /* در RTL یعنی سمت راست*/
+    }
+
+  
 
 .navbar-toggler {
   padding: var(--bs-navbar-toggler-padding-y) var(--bs-navbar-toggler-padding-x);

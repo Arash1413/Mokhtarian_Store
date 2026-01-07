@@ -86,7 +86,7 @@ class ShippingAddressInline(admin.StackedInline):
     model = ShippingAddress
     can_delete = False
     verbose_name_plural = 'آدرس ارسال'
-    classes = ['collapse']
+    # classes = ['collapse']
 
 
 

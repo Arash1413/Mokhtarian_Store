@@ -136,6 +136,24 @@
             background-color: var(--bs-light); /* پس‌زمینه کلی سایت */
         }
 
+        header {
+        box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    }
+
+    /* ردیف اول: لوگو، جستجو و ابزارها*/
+    .top-header {
+        background-color: #fff;
+        padding: 10px 0;
+    }
+
+    .search-container {
+        max-width: 500px;
+        position: relative;
+    }
+
+
+
+
         .navbar, .footer {
             background-color: #ffffff !important; /* هدر و فوتر سفید برای حس تمیزی */
         }
@@ -194,6 +212,36 @@
             font-size: 1.1rem; /* افزایش اندازه فونت آیتم‌های منو و دکمه‌ها */
         }
 
+        .utility-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 12px;
+        border: 1px solid #eee;
+        border-radius: 10px;
+        color: #333;
+        text-decoration: none;
+        background: #fff;
+        transition: 0.3s;
+    }
+    .utility-btn:hover {
+        background: #f8f9fa;
+        border-color: #ddd;
+    }
+    @media (max-width: 576px) {
+        .brand-text { font-size: 1.1rem; }
+    }
+
+    .brand-text {
+        line-height: 1;
+        display: inline-block;
+    }
+
+
+        .nav-header {
+        background-color: #fff;
+        border-top: 1px solid #f0f0f0;
+    }
+
         .navbar-brand-centered {
             font-size: 2rem !important; /* بزرگتر کردن لوگو */
         }
@@ -217,21 +265,47 @@
             width: 300px; /* یا هر عرض دیگری که مناسب می‌دانید، مثلا 250px */
         }
 
+        .gold-heart {
+        color: #dda15e !important; /* رنگ طلایی تم شما*/
+        filter: drop-shadow(0 0 1px rgba(0,0,0,0.1)); /* کمی سایه برای جلوه بیشتر*/
+        margin-left: 5px; /* فاصله از متن*/
+    }
+
+        .brand-logo {
+        font-weight: 900;
+        font-size: 1.6rem;
+        color: var(--bs-primary);
+        text-decoration: none;
+    }
+
+    .navbar-brand {
+    display: flex !important;    /* ۱. قرار دادن متن و عکس در یک ردیف */
+    align-items: center !important; /* ۲. هم‌تراز کردن عمودی (وسط‌چین کردن نسبت به هم) */
+    gap: 15px;                  /* ۳. ایجاد فاصله دقیق بین عکس و متن */
+    line-height: 1;             /* ۴. حذف فاصله‌های اضافی زیر متن */
+}
+
+    @media (max-width: 991px) {
+        .search-container { margin: 15px 0; order: 3; max-width: 100%; }
+        .nav-header { display: none; } /* مخفی کردن منو در موبایل (باید در همبرگر باشد)*/
+    }
+
         @media (max-width: 991px) {
     .search-box-container {
         max-width: 100%; /* در موبایل تمام عرض شود*/
         margin-top: 15px;
         margin-bottom: 10px;
     }
+
 }
   
 
 
         .search-box {
-            transition: all 0.3s ease;
-            border: 1px solid #e0e0e0 !important;
-            min-width: 300px; /* عرض مناسب*/
-        }
+        border-radius: 0 10px 10px 0 !important; /* لبه گرد سمت راست در RTL*/
+        padding-right: 15px !important;
+        border: 1px solid #e0e0e0 !important;
+    }
         .search-box:hover, .search-box:focus-within {
             border-color: #ffc107 !important; /* رنگ زرد/نارنجی تم سایت شما*/
             box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
@@ -372,29 +446,52 @@
         font-size: 0.9rem;
         padding: 8px;
     }
+
+    #main-nav .nav-link {
+    display: flex;
+    align-items: center;
+}
+
+#main-nav .nav-link i {
+    font-size: 1.1rem; /* هماهنگ کردن سایز قلب با متن */
+}
         </style>
         
     </head>
     <body>
         <!-- ======================= هدر جدید شبیه به وگاس ======================= -->
-        <header class="py-3 border-bottom bg-white sticky-top">
-            <div class="container-fluid px-4 px-lg-5">
-                <nav class="navbar navbar-expand-lg navbar-light">
-                    <!-- بخش راست: منوی کاربر و سبد خرید -->
-                    <div class="d-flex align-items-center">
+<header class="sticky-top bg-white border-bottom shadow-sm">
+    <!-- ردیف اول: ابزارها، جستجو و لوگو -->
+    <div class="py-3 border-bottom">
+        <div class="container-fluid px-4 px-lg-5">
+            <div class="row align-items-center">
+                
+                <!-- بخش اول (سمت چپ در RTL): سبد خرید و حساب کاربری -->
+                <div class="col-4 col-lg-3 order-1">
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- سبد خرید -->
+                        <a href="{% url 'cart:cart_detail' %}" class="utility-btn position-relative">
+                            <i class="bi bi-cart3 fs-5"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.7rem;">
+                                {{ cart|length }}
+                            </span>
+                        </a>
+
+                        <!-- حساب کاربری -->
                         <div class="dropdown">
-                            <a class="btn btn-outline-dark dropdown-toggle mx-2" href="#" role="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person"></i> حساب کاربری
+                            <a class="utility-btn dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" id="userMenu" data-bs-toggle="dropdown">
+                                <i class="bi bi-person fs-5"></i>
+                                <span class="d-none d-md-inline">{% if user.is_authenticated %}{{ user.username }}{% else %}حساب کاربری{% endif %}</span>
                             </a>
-                            <ul class="dropdown-menu" aria-labelledby="userMenu">
+                            <ul class="dropdown-menu shadow border-0 mt-2">
                                 {% if user.is_authenticated %}
-                                    <li><span class="dropdown-item-text">سلام، {{ user.username }}</span></li>
-                                    <li><a class="dropdown-item" href="{% url 'store:profile' %}">پروفایل من</a></li>
+                                    <li><a class="dropdown-item py-2" href="{% url 'store:profile' %}">سفارش‌های من</a></li>
+                                    <li><a class="dropdown-item py-2" href="{% url 'store:wishlist_page' %}">علاقه‌مندی‌ها</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <form action="{% url 'logout' %}" method="post">
                                             {% csrf_token %}
-                                            <button type="submit" class="dropdown-item">خروج</button>
+                                            <button type="submit" class="dropdown-item text-danger py-2">خروج</button>
                                         </form>
                                     </li>
                                 {% else %}
@@ -403,69 +500,70 @@
                                 {% endif %}
                             </ul>
                         </div>
-                        <a class="btn btn-outline-dark" href="{% url 'cart:cart_detail' %}">
-                            <i class="bi-cart-fill me-1"></i>
-                            <span class="badge bg-dark text-white ms-1 rounded-pill">{{ cart|length }}</span>
-                        </a>
                     </div>
-
-                    <!-- بخش وسط: لوگو -->
-                    <a class="navbar-brand navbar-brand-centered fs-3" href="/">Mokhtarian Shop</a>
-                    
-                    <!-- دکمه همبرگری برای موبایل -->
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-                    
-                    <!-- بخش چپ: منوی اصلی و جستجو -->
-                    <!-- بخش چپ: منوی اصلی و جستجو -->
-<div class="collapse navbar-collapse" id="main-nav">
-    <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a href="{% url 'store:product_list' %}" class="nav-link">خانه</a></li>
-        <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="categoriesDropdown" role="button" data-bs-toggle="dropdown">دسته‌بندی محصولات</a>
-            <ul class="dropdown-menu">
-                {% for c in categories %}
-                    <li><a class="dropdown-item" href="{% url 'store:product_list_by_category' c.slug %}">{{ c.name }}</a></li>
-                {% endfor %}
-            </ul>
-        </li>
-        <li class="nav-item"><a href="{% url 'store:about_page' %}" class="nav-link">درباره ما</a></li>
-
-        <!-- 👇👇👇 کد جدید شما در اینجا قرار می‌گیرد 👇👇👇 -->
-        {% if user.is_authenticated %}
-            <li class="nav-item">
-                <a href="{% url 'store:wishlist_page' %}" class="nav-link">
-                    <i class="bi bi-heart-fill text-danger"></i> علاقه‌مندی‌ها
-                </a>
-            </li>
-        {% endif %}
-        <!-- 👆👆👆 ----------------------------------- 👆👆👆 -->
-
-    </ul>
-    <form action="{% url 'store:search' %}" method="get" class="d-flex align-items-center ms-lg-3 my-2 my-lg-0 search-box-container">
-    <div class="input-group">
-        <!-- بسیار مهم: ویژگی name باید حتما q باشد -->
-        <input name="q" 
-               class="form-control border-end-0 search-box" 
-               type="search" 
-               placeholder="جست‌وجوی کالا..." 
-               aria-label="Search"
-               value="{{ query|default:'' }}">
-        <button class="btn btn-outline-secondary border-start-0 bg-white" type="submit">
-            <i class="bi bi-search text-primary"></i>
-        </button>
-    </div>
-</form>
-    <div class="d-none d-lg-block ms-3 border-start ps-3">
-                    <a href="/">
-                        <img src="{% static 'images/logo.png' %}" alt="Logo" style="height: 50px; width: auto; object-fit: contain;">
-                    </a>
                 </div>
+
+                <!-- بخش دوم (وسط): نوار جستجو -->
+                <div class="col-12 col-lg-6 order-3 order-lg-2 mt-3 mt-lg-0">
+                    <form action="{% url 'store:search' %}" method="get" class="search-container mx-auto">
+                        <div class="input-group">
+                            <input name="q" class="form-control search-box bg-light" type="search" placeholder="جستجوی کالا در فروشگاه مختاریان..." value="{{ query|default:'' }}">
+                            <button class="btn btn-light border-start-0" type="submit" style="border-radius: 10px 0 0 10px;">
+                                <i class="bi bi-search text-primary"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- بخش سوم (سمت راست در RTL): نام فروشگاه و لوگو -->
+                <!-- جستجو در فایل base.html برای این قسمت -->
+<div class="col-8 col-lg-3 order-2 order-lg-3 text-end">
+    <a class="navbar-brand m-0 text-dark justify-content-end" href="/">
+        <!-- متن لوگو -->
+        <span class="brand-text" style="font-weight: 900; white-space: nowrap; font-size: 1.8rem;">Mokhtarian Shop</span>
+        <!-- تصویر لوگو -->
+        <img src="{% static 'images/logo.png' %}" alt="Logo" style="height: 45px; width: auto;">
+    </a>
 </div>
-                </nav>
+
             </div>
-        </header>
+        </div>
+    </div>
+
+    <!-- ردیف دوم: منوی ناوبری (راست‌چین شده) -->
+    <nav class="navbar navbar-expand-lg navbar-light py-0">
+        <div class="container-fluid px-4 px-lg-5">
+            <!-- دکمه موبایل -->
+            <button class="navbar-toggler ms-auto my-2" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="main-nav">
+                <!-- استفاده از me-auto برای راست‌چین کردن در حالت RTL -->
+                <ul class="navbar-nav me-0 mb-2 mb-lg-0 py-2">
+                    <li class="nav-item"><a href="/" class="nav-link fw-bold px-3">خانه</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fw-bold px-3" href="#" data-bs-toggle="dropdown">دسته‌بندی محصولات</a>
+                        <ul class="dropdown-menu shadow-sm border-0">
+                            {% for c in categories %}
+                                <li><a class="dropdown-item" href="{% url 'store:product_list_by_category' c.slug %}">{{ c.name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    <li class="nav-item"><a href="{% url 'store:about_page' %}" class="nav-link fw-bold px-3">درباره ما</a></li>
+                    
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a href="{% url 'store:wishlist_page' %}" class="nav-link fw-bold px-3">
+                                <i class="bi bi-heart-fill gold-heart"></i> لیست علاقه‌مندی
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
 
         <!-- ======================= محتوای اصلی هر صفحه ======================= -->
         <main>
