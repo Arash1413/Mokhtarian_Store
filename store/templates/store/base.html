@@ -216,9 +216,16 @@
         header form[role="search"] {
             width: 300px; /* یا هر عرض دیگری که مناسب می‌دانید، مثلا 250px */
         }
+
+        @media (max-width: 991px) {
+    .search-box-container {
+        max-width: 100%; /* در موبایل تمام عرض شود*/
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+}
   
 
-        
 
         .search-box {
             transition: all 0.3s ease;
@@ -403,7 +410,7 @@
                     </div>
 
                     <!-- بخش وسط: لوگو -->
-                    <a class="navbar-brand navbar-brand-centered fs-3" href="/">Mokhtarian Store</a>
+                    <a class="navbar-brand navbar-brand-centered fs-3" href="/">Mokhtarian Shop</a>
                     
                     <!-- دکمه همبرگری برای موبایل -->
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav">
@@ -436,9 +443,20 @@
         <!-- 👆👆👆 ----------------------------------- 👆👆👆 -->
 
     </ul>
-    <form action="{% url 'store:search' %}" method="get" class="search-form d-flex align-items-center">
-        <!-- ... فرم جستجو ... -->
-    </form>
+    <form action="{% url 'store:search' %}" method="get" class="d-flex align-items-center ms-lg-3 my-2 my-lg-0 search-box-container">
+    <div class="input-group">
+        <!-- بسیار مهم: ویژگی name باید حتما q باشد -->
+        <input name="q" 
+               class="form-control border-end-0 search-box" 
+               type="search" 
+               placeholder="جست‌وجوی کالا..." 
+               aria-label="Search"
+               value="{{ query|default:'' }}">
+        <button class="btn btn-outline-secondary border-start-0 bg-white" type="submit">
+            <i class="bi bi-search text-primary"></i>
+        </button>
+    </div>
+</form>
     <div class="d-none d-lg-block ms-3 border-start ps-3">
                     <a href="/">
                         <img src="{% static 'images/logo.png' %}" alt="Logo" style="height: 50px; width: auto; object-fit: contain;">
