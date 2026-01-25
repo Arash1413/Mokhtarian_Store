@@ -22,7 +22,7 @@
 <!-- ========================================== -->
 <!-- 👇 اسلایدر محصولات (بنر بالایی) 👇 -->
 <!-- ========================================== -->
-<div class="container-fluid p-0 mb-4 main-slider" dir="rtl">
+<!-- <div class="container-fluid p-0 mb-4 main-slider" dir="rtl">
     <div class="swiper mySwiper">
         <div class="swiper-wrapper">
             {% for product in latest_products %}
@@ -32,22 +32,22 @@
                         <img src="{{ product.image.url }}" alt="{{ product.name }}">
                     {% else %}
                         <img src="{% static 'images/placeholder.png' %}" alt="{{ product.name }}">
-                    {% endif %}
-                    <div class="slide-content">
+                    {% endif %} -->
+                    <!-- <div class="slide-content">
                         <span class="badge bg-warning text-dark mb-1" style="font-size: 0.7rem;">جدیدترین</span>
-                        <h3>{{ product.name }}</h3>
+                        <h3>{{ product.name }}</h3> -->
                         <!-- نمایش قیمت با جداکننده -->
-                        <p class="price">{{ product.price|floatformat:0|intcomma:False }} <small>تومان</small></p>
+                        <!-- <p class="price">{{ product.price|floatformat:0|intcomma:False }} <small>تومان</small></p>
                     </div>
                 </a>
             </div>
-            {% endfor %}
-        </div>
+            {% endfor %} -->
+        <!-- </div>
         <div class="swiper-button-next"></div>
         <div class="swiper-button-prev"></div>
         <div class="swiper-pagination"></div>
     </div>
-</div>
+</div> -->
 
 <div class="container px-3 py-4" id="custom-cards">
 
