@@ -187,7 +187,7 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
     # ریدایرکت تمام درخواست‌های HTTP به HTTPS
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = False
     
     # استفاده از کوکی‌های امن که فقط روی HTTPS ارسال می‌شوند
     SESSION_COOKIE_SECURE = True

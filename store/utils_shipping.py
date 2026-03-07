@@ -9,43 +9,43 @@ def calculate_shipping_cost(total_weight_grams):
     
     # تبدیل به تومان طبق سناریوی شما
     if total_weight_grams < 500:
-        return 70000
+        return 85000
     elif total_weight_grams < 1000: # زیر 1 کیلو
-        return 100000
+        return 115000
     elif total_weight_grams < 2000: # زیر 2 کیلو
-        return 150000
+        return 165000
     elif total_weight_grams < 3000: # زیر 3 کیلو
-        return 200000
-    elif total_weight_grams < 4000: # زیر 4 کیلو
         return 250000
-    elif total_weight_grams < 5000: # زیر 4 کیلو
-        return 300000
-    elif total_weight_grams < 6000: # زیر 4 کیلو
-        return 350000
-    elif total_weight_grams < 7000: # زیر 4 کیلو
-        return 400000
-    elif total_weight_grams < 8000: # زیر 4 کیلو
-        return 450000
-    elif total_weight_grams < 9000: # زیر 4 کیلو
-        return 500000
-    elif total_weight_grams < 10000: # زیر 4 کیلو
-        return 550000
-    elif total_weight_grams < 11000: # زیر 4 کیلو
-        return 600000
-    elif total_weight_grams < 12000: # زیر 4 کیلو
-        return 650000
-    elif total_weight_grams < 13000: # زیر 4 کیلو
-        return 700000
     elif total_weight_grams < 4000: # زیر 4 کیلو
-        return 750000
+        return 265000
+    elif total_weight_grams < 5000: # زیر 4 کیلو
+        return 315000
+    elif total_weight_grams < 6000: # زیر 4 کیلو
+        return 365000
+    elif total_weight_grams < 7000: # زیر 4 کیلو
+        return 415000
+    elif total_weight_grams < 8000: # زیر 4 کیلو
+        return 465000
+    elif total_weight_grams < 9000: # زیر 4 کیلو
+        return 515000
+    elif total_weight_grams < 10000: # زیر 4 کیلو
+        return 565000
+    elif total_weight_grams < 11000: # زیر 4 کیلو
+        return 615000
+    elif total_weight_grams < 12000: # زیر 4 کیلو
+        return 665000
+    elif total_weight_grams < 13000: # زیر 4 کیلو
+        return 715000
+    elif total_weight_grams < 4000: # زیر 4 کیلو
+        return 765000
     elif total_weight_grams < 15000: # زیر 4 کیلو
-        return 800000
+        return 815000
     elif total_weight_grams < 16000: # زیر 4 کیلو
-        return 850000
+        return 865000
     elif total_weight_grams < 17000: # زیر 4 کیلو
-        return 900000
+        return 915000
     elif total_weight_grams < 18000: # زیر 4 کیلو
-        return 950000
+        return 965000
     else:
         # برای وزن‌های بالاتر از 4 کیلو، مثلا هر کیلو 30 تومن اضافه شود (اختیاری)
         # فعلا روی همان 250 قفل می‌کنیم یا طبق سیاست شما تغییر دهید
