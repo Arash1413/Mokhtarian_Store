@@ -31,6 +31,7 @@ import secrets
 from django.db import transaction
 from .forms import CustomAuthenticationForm
 from django.contrib.auth.views import LoginView
+from decouple import config
 
 logger = logging.getLogger(__name__)
 
@@ -392,13 +393,15 @@ def verify_otp(request):
                 
                 amount_toman = int(final_total_price)
                 callback_url = request.build_absolute_uri(reverse('store:payment_verify'))
+                final_total_price_rials = int(amount_toman * 10)
                 
                 payment_data = {
                     'pin': settings.MR_PARDDAKHT_API_KEY,
-                    'amount': amount_toman,
+                    'amount': final_total_price_rials,
                     'callback': callback_url,
                     'order_id': str(order.id),
-                    'description': f'پرداخت سفارش شماره {order.id} | موبایل: {phone}',
+                    # 'description': f'پرداخت سفارش شماره {order.id} | موبایل: {phone}',
+                    'description': f'پرداخت سفارش شماره {order.id}',
                     'mobile': phone,
                 }
 
@@ -527,7 +530,8 @@ def payment_verify(request):
 
     
     verify_data = {
-        'pin': settings.MR_PARDDAKHT_API_KEY, 
+        # 'pin': settings.MR_PARDDAKHT_API_KEY, 
+        'pin': config('MR_PARDDAKHT_API_KEY'), 
         'amount': expected_amount_rials, 
         'transid': transid
     }
@@ -598,7 +602,6 @@ def payment_verify(request):
         logger.exception("Error verifying payment with gateway")
         error_message = 'خطا در ارتباط با درگاه. لطفاً با پشتیبانی تماس بگیرید.'
         return render(request, 'store/payment_result.html', {'error': error_message})
-
 
 
 @login_required(login_url='login')
