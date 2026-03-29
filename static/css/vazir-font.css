@@ -1,0 +1,21 @@
+/* static/css/vazir-font.css */
+@font-face {
+  font-family: Vazirmatn;
+  src: url('/static/fonts/Vazirmatn.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap; /* باعث می‌شود متن بلافاصله با فونت پیش‌فرض نمایش داده شود و بعد جایگزین شود */
+}
+
+@font-face {
+  font-family: Vazirmatn;
+  src: url('/static/fonts/Vazirmatn-Bold.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* اعمال به کل بدنه سایت */
+body {
+    font-family: Vazirmatn, sans-serif !important;
+}

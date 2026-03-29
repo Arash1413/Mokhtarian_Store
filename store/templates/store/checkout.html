@@ -1,9 +1,10 @@
 {% extends "store/base.html" %}
 {% load static %}
-
+<link href="{% static 'css/select2.min' %}" rel="stylesheet" />
 {% block content %}
 <!-- اضافه کردن استایل Select2 در ابتدای بلاک -->
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<!-- <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" /> -->
+
 
 <style>
     /* هماهنگ‌سازی Select2 با ظاهر بوت‌استرپ 5 */
@@ -121,7 +122,9 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+<script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+<!-- <link href="{% static 'js/jquery.min.js' %}" rel="stylesheet" /> -->
 <script>
 $(document).ready(function() {
     // ۱. پیدا کردن اینپوت‌ها (آیدی‌ها باید با id ست شده در forms.py یکی باشد)

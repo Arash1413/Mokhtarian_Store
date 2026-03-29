@@ -24,12 +24,15 @@ services:
     container_name: shop_web
     restart: always
     # دستور اجرا: ابتدا دیتابیس آماده شود، سپس میگریشن و در نهایت اجرا
+    extra_hosts:
+      - "panel.aqayepardakht.ir:185.143.235.201"
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
              gunicorn config.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - .:/app
+      - ./static:/app/static
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     env_file:
@@ -39,6 +42,8 @@ services:
       - redis
     expose:
       - 8000
+    
+    
 
   nginx:
     image: nginx:alpine

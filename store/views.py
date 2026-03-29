@@ -408,6 +408,11 @@ def verify_otp(request):
                 headers = {'Content-Type': 'application/json'}
 
                 response = requests.post(request_url, json=payment_data, headers=headers, timeout=10)
+
+                print("STATUS:", response.status_code)
+                print("BODY:", response.text)
+
+
                 response.raise_for_status()
                 response_json = response.json()
                 
@@ -448,6 +453,12 @@ def verify_otp(request):
                     order.save()
                 
                 logger.exception("Error processing verify_otp order creation")
+                print(f"Shipping Data: {shipping_data}")
+                print(f"Cart Total Price: {cart_total_price}")
+                print(f"Shipping Cost: {final_shipping_cost}")
+                print(f"Final Total Price: {final_total_price}")
+                print(f"Order ID (if created): {order.id if 'order' in locals() else 'Not created yet'}")
+                print(f"Payment Response: {response_json}")
                 return JsonResponse({
                     "success": False, 
                     "message": "خطا در ثبت سفارش. لطفاً دقایقی دیگر تلاش کنید."
