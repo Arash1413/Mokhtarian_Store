@@ -393,11 +393,11 @@ def verify_otp(request):
                 
                 amount_toman = int(final_total_price)
                 callback_url = request.build_absolute_uri(reverse('store:payment_verify'))
-                final_total_price_rials = int(amount_toman * 10)
+                
                 
                 payment_data = {
                     'pin': settings.MR_PARDDAKHT_API_KEY,
-                    'amount': final_total_price_rials,
+                    'amount': amount_toman,
                     'callback': callback_url,
                     'order_id': str(order.id),
                     # 'description': f'پرداخت سفارش شماره {order.id} | موبایل: {phone}',
@@ -527,6 +527,7 @@ def payment_verify(request):
 
     
     expected_amount_rials = int(order.total_price * 10)
+    
 
     
     verify_data = {
