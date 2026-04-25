@@ -7,7 +7,52 @@
 
 {% block og_title %}{{ product.name }}{% endblock %}
 {% block og_description %}{{ product.description|truncatewords:30 }}{% endblock %}
-{% block og_image %}{{ product.image.url }}{% endblock %}
+
+{% comment %}
+<!-- 
+  We use request.scheme and request.get_host to create a full, absolute URL for the image,
+  which is better for external crawlers like Google, Facebook, and Torob.
+-->
+{% endcomment %}
+{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{{ product.image.url }}{% endblock %}
+
+
+{% comment %}
+============================================================
+ Torob Integration Meta Tags
+ These tags are specifically for the Torob crawler as requested.
+ They are placed in the custom block we created in base.html.
+============================================================
+{% endcomment %}
+{% block torob_meta_tags %}
+    <!-- Product ID for Torob -->
+    <meta name="product_id" content="{{ product.id }}">
+    
+    <!-- Product Name for Torob -->
+    <meta name="product_name" content="{{ product.name }}">
+
+    <!-- Product Price for Torob (Number only, no commas or decimals) -->
+    <meta name="product_price" content="{{ product.price|floatformat:0 }}">
+
+    <!-- Product Old Price for Torob (if it exists) -->
+    {% if product.old_price %}
+    <meta name="product_old_price" content="{{ product.old_price|floatformat:0 }}">
+    {% endif %}
+
+    <!-- Product Availability Status for Torob -->
+    <meta name="availability" content="{% if product.stock > 0 %}instock{% else %}outofstock{% endif %}">
+    
+    <!-- (Optional) Product Guarantee for Torob -->
+    {% comment %}
+      NOTE: This tag is conditional. It will only be added if your 'product' model has a field named 'guarantee'.
+      If you have a guarantee field with a different name, change 'product.guarantee' accordingly.
+      Example: <meta name="guarantee" content="گارانتی ۱۸ ماهه آرتا">
+    {% endcomment %}
+    {% if product.guarantee %}
+    <meta name="guarantee" content="{{ product.guarantee }}">
+    {% endif %}
+{% endblock torob_meta_tags %}
+
 
 {% block content %}
 <div class="container-xl my-5 px-4 px-lg-5">
@@ -104,86 +149,47 @@
                                 <!-- ورودی تعداد -->
                                 <div class="col-4 col-md-3">
                                     <label class="form-label small text-muted mb-1 fw-bold">تعداد:</label>
-                                    <!-- <input type="number" 
+                                    <input type="number" 
                                            name="quantity" 
                                            class="form-control form-control-lg text-center fw-bold" 
                                            value="1" 
                                            min="1" 
                                            max="{{ product.stock }}" 
                                            {% if product.stock == 0 %}disabled{% endif %}
-                                           required> -->
-                                           <input type="number" 
-                                                name="quantity" 
-                                                class="form-control form-control-lg text-center fw-bold" 
-                                                
-                                                value="{{ product.min_order_quantity }}" 
-                                                min="{{ product.min_order_quantity }}" 
-                                                
-                                                {% if product.max_order_quantity %}
-                                                    max="{{ product.max_order_quantity }}"
-                                                {% else %}
-                                                    max="{{ product.stock }}"
-                                                {% endif %}
-                                                
-                                                {% if product.stock == 0 %}disabled{% endif %}
-                                                required>
-
+                                           required>
                                 </div>
-                        
-                                <!-- دکمه افزودن -->
+                                <!-- دکمه افزودن به سبد -->
                                 <div class="col-8 col-md-9">
-                                    {% if product.stock > 0 %}
-                                    <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold shadow-sm h-100">
-                                        <i class="bi bi-cart-plus me-2"></i> افزودن به سبد خرید
+                                    <button class="btn btn-primary btn-lg w-100 fw-bold shadow-sm" type="submit" {% if product.stock == 0 %}disabled{% endif %}>
+                                        <i class="bi-cart-fill me-2"></i>
+                                        افزودن به سبد خرید
                                     </button>
-                                    {% else %}
-                                    <button type="button" class="btn btn-secondary btn-lg w-100 fw-bold h-100" disabled>
-                                        ناموجود
-                                    </button>
-                                    {% endif %}
                                 </div>
                             </div>
                         </form>
-                        <!-- ================================================= -->
+                        <!-- ========================================== -->
+
                     </div>
                 </div>
 
-                {% if product.attributes.all %}
-                <div class="product-features mt-4">
-                    <h5 class="fw-bold border-bottom pb-2 mb-3">ویژگی‌های اصلی</h5>
-                    <ul class="list-unstyled">
-                        {% for attr in product.attributes.all|slice:":5" %}
-                        <li class="mb-2 d-flex align-items-center text-muted">
-                            <i class="bi bi-dot fs-3 text-primary lh-1"></i>
-                            <strong class="text-dark ms-1">{{ attr.attribute.name }}:</strong> 
-                            <span class="ms-2">{{ attr.value }}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
+                <!-- توضیحات محصول -->
+                <div class="product-description mt-5">
+                    <h4 class="fw-bold border-bottom pb-2 mb-3">توضیحات محصول</h4>
+                    <p class="text-muted lh-lg">{{ product.description|safe }}</p>
                 </div>
-                {% endif %}
             </div>
         </div>
     </div>
+    <hr class="my-5">
 
-    <!-- ==================== ردیف توضیحات و مشخصات ==================== -->
+    <!-- ==================== مشخصات فنی ==================== -->
     <div class="row mt-5">
         <div class="col-12">
-            <ul class="nav nav-tabs fs-5 border-bottom-0" id="productTab" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active fw-bold px-4" id="description-tab" data-bs-toggle="tab" data-bs-target="#description">توضیحات</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-bold px-4" id="specifications-tab-btn" data-bs-toggle="tab" data-bs-target="#specifications">مشخصات فنی</button>
-                </li>
-            </ul>
-
-            <div class="tab-content p-4 border rounded-3 rounded-top-0 fs-6 bg-white shadow-sm" id="productTabContent">
-                <div class="tab-pane fade show active" id="description" role="tabpanel">
-                    <p class="lh-lg text-secondary mb-0" style="text-align: justify;">{{ product.description|linebreaks }}</p>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light border-0 py-3">
+                    <h4 class="fw-bold m-0">مشخصات فنی</h4>
                 </div>
-
-                <div class="tab-pane fade" id="specifications" role="tabpanel">
+                <div class="card-body p-0">
                     {% if product.attributes.all %}
                         <div class="table-responsive">
                             <table class="table table-striped table-hover align-middle mb-0">
@@ -275,7 +281,8 @@
                         {% csrf_token %}
                         
                         <div class="mb-3">
-                            <label class="form-label">امتیاز شما</label>
+
+<label class="form-label">امتیاز شما</label>
                             <div class="rating-css">
                                 <div class="star-icon">
                                     <input type="radio" name="rating" value="1" checked> 1

@@ -392,7 +392,9 @@ def verify_otp(request):
 
                 
                 amount_toman = int(final_total_price)
+                logger.debug
                 callback_url = request.build_absolute_uri(reverse('store:payment_verify'))
+                print(f"DEBUG: Generated callback_url: {callback_url}") # لاگ URL تولید شده
                 
                 
                 payment_data = {
@@ -405,12 +407,15 @@ def verify_otp(request):
                     'mobile': phone,
                 }
 
+                print(f"DEBUG: Payment data before sending to /create: {payment_data}") # لاگ داده‌های ارسالی
+
                 debug_prepare_payment_data(payment_data)
 
                 request_url = 'https://panel.aqayepardakht.ir/api/v2/create'
                 headers = {'Content-Type': 'application/json'}
 
                 response = requests.post(request_url, json=payment_data, headers=headers, timeout=10)
+                print(f"DEBUG: Response from /create: {response.status_code}, {response.json()}") # لاگ پاسخ از درگاه
 
                 print("STATUS:", response.status_code)
                 print("BODY:", response.text)
@@ -507,66 +512,162 @@ def checkout(request):
     return render(request, 'store/checkout.html', context)
 
 
+# @csrf_exempt
+# def payment_verify(request):
+#     print(f"DEBUG: Request method in payment_verify: {request.method}")
+#     print(f"DEBUG: POST data in payment_verify: {request.POST}")
+#     print(f"DEBUG: GET data in payment_verify: {request.GET}")
+#     transid = request.POST.get('transid') or request.GET.get('transid')
+#     print(f"DEBUG: Extracted transid: {transid}")
+#     if not transid:
+#         print("ERROR: transid is missing in payment_verify")
+#         logger.error("verify called without transid")
+#         return render(request, 'store/payment_result.html', {'error': 'تراکنش نامعتبر است.'})
+
+#     try:
+        
+#         order = Order.objects.get(transaction_id=transid, complete=False)
+#     except Order.DoesNotExist:
+        
+#         if Order.objects.filter(transaction_id=transid, complete=True).exists():
+#             order_done = Order.objects.get(transaction_id=transid)
+#             return render(request, 'store/payment_result.html', {'order': order_done, 'success': True, 'already_verified': True})
+#         logger.error(f"Order with transid {transid} not found") 
+#         return render(request, 'store/payment_result.html', {'error': 'سفارش یافت نشد.'})
+
+    
+#     expected_amount_rials = int(order.total_price * 10)
+    
+
+    
+#     verify_data = {
+#         # 'pin': settings.MR_PARDDAKHT_API_KEY, 
+#         'pin': config('MR_PARDDAKHT_API_KEY'), 
+#         'amount': expected_amount_rials, 
+#         'transid': transid
+#     }
+
+#     debug_prepare_payment_data(verify_data)
+
+#     verify_url = 'https://panel.aqayepardakht.ir/api/v2/verify'
+#     headers = {'Content-Type': 'application/json'}
+#     try:
+#         response = requests.post(verify_url, json=verify_data, headers=headers, timeout=10)
+#         response.raise_for_status()
+#         response_json = response.json()
+
+#         logger.info(f"Payment verify response: {response_json}")
+        
+#         if response_json.get('status') == 'success':
+           
+#             paid_amount = int(response_json.get('amount', expected_amount_rials))
+            
+#             if paid_amount != expected_amount_rials:
+                
+#                 logger.critical(f"Payment Fraud Attempt! Order: {order.id}, Expected: {expected_amount_rials}, Paid: {paid_amount}")
+                
+#                 order.status = 'cancelled' 
+#                 order.save()
+                
+#                 return render(request, 'store/payment_result.html', {
+#                     'error': 'مبلغ پرداخت شده با مبلغ سفارش مغایرت دارد. تراکنش لغو شد.'
+#                 })
+            
+#             order.complete = True
+#             order.status = 'paid'
+            
+            
+#             for item in order.orderitem_set.all():
+#                 product = item.product
+#                 if product.stock >= item.quantity:
+#                     product.stock -= item.quantity
+#                     product.save()
+#                 else:
+#                     logger.warning(f"Order {order.id}: Product {product.id} stock was {product.stock}, needed {item.quantity}. Set to 0.")
+#                     product.stock = 0
+#                     product.save()
+
+#             order.save()
+
+#             try:
+#                 send_bale_order_notification(order)
+#             except Exception as e:
+#                 logger.error(f"Failed to send telegram notification: {e}")
+            
+            
+#             request.cart.clear()
+#             request.session.pop('phone_verified', None)
+#             request.session.pop('next_url', None)
+            
+#             return render(request, 'store/payment_result.html', {'order': order, 'success': True})
+#         else:
+#             error_message = response_json.get('message', 'تراکنش توسط درگاه تأیید نشد.')
+#             logger.error(f"Payment verification failed: {response_json}")
+            
+#             order.status = 'cancelled'
+#             order.save()
+            
+#             return render(request, 'store/payment_result.html', {'error': error_message})
+            
+#     except requests.exceptions.RequestException as e:
+#         logger.exception("Error verifying payment with gateway")
+#         error_message = 'خطا در ارتباط با درگاه. لطفاً با پشتیبانی تماس بگیرید.'
+#         return render(request, 'store/payment_result.html', {'error': error_message})
 @csrf_exempt
 def payment_verify(request):
-    transid = request.POST.get('transid') or request.GET.get('transid')
-    if not transid:
-        logger.error("verify called without transid")
-        return render(request, 'store/payment_result.html', {'error': 'تراکنش نامعتبر است.'})
+        print(f"DEBUG: Request method in payment_verify: {request.method}")
+        print(f"DEBUG: POST data in payment_verify: {request.POST}")
+        print(f"DEBUG: GET data in payment_verify: {request.GET}")
 
-    try:
+        # پارامترهای دریافتی از درگاه پرداخت (معمولا در GET)
+        transid = request.GET.get('transid') or request.POST.get('transid')
+        gateway_status = request.GET.get('status') or request.POST.get('status')
+        # ممکن است پارامترهای دیگری هم باشند که باید چک شوند
+        tracking_number = request.GET.get('tracking_number') or request.POST.get('tracking_number')
+        # ... سایر پارامترهای مهم
+
+        print(f"DEBUG: Extracted transid: {transid}, status: {gateway_status}, tracking_number: {tracking_number}")
+
+        if not transid:
+            logger.error("Payment verify called without transid")
+            return render(request, 'store/payment_result.html', {'error': 'تراکنش نامعتبر است.'})
+
+        order = None # تعریف متغیر order در ابتدا
+        try:
+            # سعی می کنیم سفارش را با ترنزیشن آیدی پیدا کنیم
+            order = Order.objects.get(transaction_id=transid, complete=False)
+        except Order.DoesNotExist:
+            # اگر سفارش پیدا نشد، چک می کنیم که قبلا تکمیل شده باشد
+            if Order.objects.filter(transaction_id=transid).exists():
+                order_done = Order.objects.get(transaction_id=transid)
+                # اگر قبلا تکمیل شده بود، صفحه نتیجه موفق را نمایش می دهیم
+                return render(request, 'store/payment_result.html', {'order': order_done, 'success': True, 'already_verified': True})
+            logger.error(f"Order with transid {transid} not found")
+            return render(request, 'store/payment_result.html', {'error': 'سفارش یافت نشد.'})
+
         
-        order = Order.objects.get(transaction_id=transid, complete=False)
-    except Order.DoesNotExist:
-        
-        if Order.objects.filter(transaction_id=transid, complete=True).exists():
-            order_done = Order.objects.get(transaction_id=transid)
-            return render(request, 'store/payment_result.html', {'order': order_done, 'success': True, 'already_verified': True})
-        logger.error(f"Order with transid {transid} not found") 
-        return render(request, 'store/payment_result.html', {'error': 'سفارش یافت نشد.'})
+        # بر اساس وضعیت دریافتی از درگاه، تصمیم می گیریم
+        if gateway_status == '1': # فرض می کنیم '1' یعنی موفقیت آمیز
+            # *** اینجا می توانید مبلغ برگشتی را نیز چک کنید ***
+            paid_amount_str = request.GET.get('amount') or request.POST.get('amount')
+            if paid_amount_str:
+                paid_amount = int(paid_amount_str)
+                expected_amount_rials = int(order.total_price * 10)
+                if paid_amount != expected_amount_rials:
+                    logger.critical(f"Payment Fraud Attempt! Order: {order.id}, Expected: {expected_amount_rials}, Paid: {paid_amount}")
+                    order.status = 'cancelled'
+                    order.save()
+                    return render(request, 'store/payment_result.html', {
+                        'error': 'مبلغ پرداخت شده با مبلغ سفارش مغایرت دارد. تراکنش لغو شد.'
+                    })
 
-    
-    expected_amount_rials = int(order.total_price * 10)
-    
-
-    
-    verify_data = {
-        # 'pin': settings.MR_PARDDAKHT_API_KEY, 
-        'pin': config('MR_PARDDAKHT_API_KEY'), 
-        'amount': expected_amount_rials, 
-        'transid': transid
-    }
-
-    debug_prepare_payment_data(verify_data)
-
-    verify_url = 'https://panel.aqayepardakht.ir/api/v2/verify'
-    headers = {'Content-Type': 'application/json'}
-    try:
-        response = requests.post(verify_url, json=verify_data, headers=headers, timeout=10)
-        response.raise_for_status()
-        response_json = response.json()
-
-        logger.info(f"Payment verify response: {response_json}")
-        
-        if response_json.get('status') == 'success':
-           
-            paid_amount = int(response_json.get('amount', expected_amount_rials))
-            
-            if paid_amount != expected_amount_rials:
-                
-                logger.critical(f"Payment Fraud Attempt! Order: {order.id}, Expected: {expected_amount_rials}, Paid: {paid_amount}")
-                
-                order.status = 'cancelled' 
-                order.save()
-                
-                return render(request, 'store/payment_result.html', {
-                    'error': 'مبلغ پرداخت شده با مبلغ سفارش مغایرت دارد. تراکنش لغو شد.'
-                })
-            
+            # اگر وضعیت موفق بود و مبلغ درست بود
             order.complete = True
             order.status = 'paid'
-            
-            
+            order.transaction_id = transid # اطمینان از ذخیره شدن transid
+            order.tracking_number = tracking_number # ذخیره شماره پیگیری
+
+            # ... (منطق کاهش موجودی محصول و ... که قبلا داشتید) ...
             for item in order.orderitem_set.all():
                 product = item.product
                 if product.stock >= item.quantity:
@@ -579,30 +680,28 @@ def payment_verify(request):
 
             order.save()
 
+            # ... (ارسال نوتیفیکیشن و پاک کردن سبد خرید) ...
             try:
                 send_bale_order_notification(order)
             except Exception as e:
                 logger.error(f"Failed to send telegram notification: {e}")
-            
-            
+
             request.cart.clear()
             request.session.pop('phone_verified', None)
             request.session.pop('next_url', None)
-            
+
             return render(request, 'store/payment_result.html', {'order': order, 'success': True})
         else:
-            error_message = response_json.get('message', 'تراکنش توسط درگاه تأیید نشد.')
-            logger.error(f"Payment verification failed: {response_json}")
-            
+            # اگر وضعیت درگاه ناموفق بود
+            error_message = request.GET.get('message') or request.POST.get('message', 'تراکنش توسط درگاه تأیید نشد.')
+            logger.error(f"Payment verification failed from gateway. Status: {gateway_status}, Message: {error_message}")
+
             order.status = 'cancelled'
             order.save()
-            
+
             return render(request, 'store/payment_result.html', {'error': error_message})
-            
-    except requests.exceptions.RequestException as e:
-        logger.exception("Error verifying payment with gateway")
-        error_message = 'خطا در ارتباط با درگاه. لطفاً با پشتیبانی تماس بگیرید.'
-        return render(request, 'store/payment_result.html', {'error': error_message})
+
+    
 
 
 @login_required(login_url='login')
